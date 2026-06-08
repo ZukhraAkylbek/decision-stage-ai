@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createLovableAiGatewayProvider } from "./ai-gateway.server";
 import { SCENARIOS, type Scenario } from "./scenarios";
 
-const MODEL = "google/gemini-3-flash-preview";
+const MODEL = "google/gemini-2.5-flash";
 
 function getModel() {
   const key = process.env.LOVABLE_API_KEY;

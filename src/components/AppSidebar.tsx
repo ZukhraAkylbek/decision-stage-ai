@@ -20,12 +20,17 @@ const nav = [
   { to: "/resources", key: "nav.resources", icon: BookOpen },
 ] as const;
 
-export function AppSidebar() {
+export function AppSidebar({ collapsed = false }: { collapsed?: boolean }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { t, lang, setLang } = useI18n();
 
+  if (collapsed) {
+    return <aside className="hidden md:flex w-0 shrink-0" aria-hidden="true" />;
+  }
+
   return (
     <aside className="hidden md:flex w-[240px] flex-col bg-sidebar text-sidebar-foreground shrink-0 sticky top-0 h-screen">
+
       <div className="px-5 pt-6 pb-8">
         <Link to="/" className="flex items-center gap-2.5">
           <div className="size-9 rounded-lg bg-gradient-primary grid place-items-center shadow-glow">

@@ -236,9 +236,10 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
         return;
       }
       setStep((s) => s + 1);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      setLastReaction(t("run.errorHiccup"));
+      const msg = e?.message || String(e);
+      setLastReaction(`${t("run.errorHiccup")} (${msg})`);
     } finally {
       setPending(false);
     }
