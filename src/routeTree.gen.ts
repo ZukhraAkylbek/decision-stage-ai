@@ -12,7 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as SimulationsIndexRouteImport } from './routes/simulations.index'
-import { Route as SimulationsIdRouteImport } from './routes/simulations.$id'
+import { Route as SimulationsIdIndexRouteImport } from './routes/simulations.$id.index'
 import { Route as SimulationsIdResultsRouteImport } from './routes/simulations.$id.results'
 
 const ProgressRoute = ProgressRouteImport.update({
@@ -30,9 +30,9 @@ const SimulationsIndexRoute = SimulationsIndexRouteImport.update({
   path: '/simulations/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const SimulationsIdRoute = SimulationsIdRouteImport.update({
-  id: '/simulations/$id',
-  path: '/simulations/$id',
+const SimulationsIdIndexRoute = SimulationsIdIndexRouteImport.update({
+  id: '/simulations/$id/',
+  path: '/simulations/$id/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const SimulationsIdResultsRoute = SimulationsIdResultsRouteImport.update({
@@ -44,54 +44,54 @@ const SimulationsIdResultsRoute = SimulationsIdResultsRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/progress': typeof ProgressRoute
-  '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
+  '/simulations/$id/': typeof SimulationsIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/progress': typeof ProgressRoute
-  '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations': typeof SimulationsIndexRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
+  '/simulations/$id': typeof SimulationsIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/progress': typeof ProgressRoute
-  '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
+  '/simulations/$id/': typeof SimulationsIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/progress'
-    | '/simulations/$id'
     | '/simulations/'
     | '/simulations/$id/results'
+    | '/simulations/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/progress'
-    | '/simulations/$id'
     | '/simulations'
     | '/simulations/$id/results'
+    | '/simulations/$id'
   id:
     | '__root__'
     | '/'
     | '/progress'
-    | '/simulations/$id'
     | '/simulations/'
     | '/simulations/$id/results'
+    | '/simulations/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   ProgressRoute: typeof ProgressRoute
-  SimulationsIdRoute: typeof SimulationsIdRouteWithChildren
   SimulationsIndexRoute: typeof SimulationsIndexRoute
+  SimulationsIdIndexRoute: typeof SimulationsIdIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -117,11 +117,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationsIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/simulations/$id': {
-      id: '/simulations/$id'
+    '/simulations/$id/': {
+      id: '/simulations/$id/'
       path: '/simulations/$id'
-      fullPath: '/simulations/$id'
-      preLoaderRoute: typeof SimulationsIdRouteImport
+      fullPath: '/simulations/$id/'
+      preLoaderRoute: typeof SimulationsIdIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/simulations/$id/results': {
@@ -134,24 +134,22 @@ declare module '@tanstack/react-router' {
   }
 }
 
-interface SimulationsIdRouteChildren {
-  SimulationsIdResultsRoute: typeof SimulationsIdResultsRoute
-}
-
-const SimulationsIdRouteChildren: SimulationsIdRouteChildren = {
-  SimulationsIdResultsRoute: SimulationsIdResultsRoute,
-}
-
-const SimulationsIdRouteWithChildren = SimulationsIdRoute._addFileChildren(
-  SimulationsIdRouteChildren,
-)
-
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   ProgressRoute: ProgressRoute,
-  SimulationsIdRoute: SimulationsIdRouteWithChildren,
   SimulationsIndexRoute: SimulationsIndexRoute,
+  SimulationsIdIndexRoute: SimulationsIdIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
+
+import type { getRouter } from './router.tsx'
+import type { startInstance } from './start.ts'
+declare module '@tanstack/react-start' {
+  interface Register {
+    ssr: true
+    router: Awaited<ReturnType<typeof getRouter>>
+    config: Awaited<ReturnType<typeof startInstance.getOptions>>
+  }
+}

@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export const Route = createFileRoute("/simulations/$id")({
+export const Route = createFileRoute("/simulations/$id/")({
   loader: ({ params }) => {
     const s = getScenario(params.id);
     if (!s) throw notFound();
