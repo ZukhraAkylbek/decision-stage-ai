@@ -51,8 +51,6 @@ const ReactionSchema = z.object({
 });
 
 type ReactionOutput = z.infer<typeof ReactionSchema>;
-type ReportOutput = z.infer<typeof ReportSchema>;
-
 function clampScore(value: number) {
   return Math.max(0, Math.min(100, Math.round(value)));
 }
@@ -181,6 +179,39 @@ const ReportSchema = z.object({
   summary: z.string().describe("2-3 sentence AI evaluation summary"),
   recommendations: z.array(z.string()).max(4),
 });
+
+type ReportOutput = z.infer<typeof ReportSchema>;
+
+function fallbackReport(scenario: Scenario, data: z.infer<typeof ReportInput>): ReportOutput {
+  const isRu = data.language === "ru";
+  const decisions = data.history.map((h) => h.decision).join(" ");
+  const scoreBase = clampScore(62 + data.history.reduce((sum, h) => sum + decisionScore(h.decision), 0) / Math.max(1, data.history.length));
+
+  return {
+    finalScore: scoreBase,
+    verdict: isRu ? (scoreBase >= 75 ? "Сильное решение" : "Хорошая база") : scoreBase >= 75 ? "Strong performance" : "Good foundation",
+    skills: {
+      productThinking: clampScore(scoreBase + (/(клиент|customer|interview|интерв)/i.test(decisions) ? 8 : 0)),
+      analytics: clampScore(scoreBase + (/(анализ|data|данн|metric|метрик)/i.test(decisions) ? 8 : -2)),
+      communication: clampScore(scoreBase + 2),
+      prioritization: clampScore(scoreBase + (/(приор|scope|скоуп|cost|стоим)/i.test(decisions) ? 6 : 0)),
+      execution: clampScore(scoreBase - 1),
+      riskManagement: clampScore(scoreBase + (/(risk|риск|rollback|откат|estimate|оцен)/i.test(decisions) ? 6 : -1)),
+    },
+    strengths: isRu
+      ? ["Действия связаны с контекстом сценария", "Есть движение к проверке гипотез", "Решения помогают выровнять команду"]
+      : ["Actions match the scenario context", "You moved toward validating hypotheses", "Decisions helped align the team"],
+    improvements: isRu
+      ? ["Чётче фиксируй критерии успеха", "Раньше показывай риски и trade-offs", "Связывай каждое решение с метриками"]
+      : ["Define success criteria more clearly", "Surface risks and trade-offs earlier", "Tie every decision to metrics"],
+    summary: isRu
+      ? `Ты прошёл(ла) сценарий «${scenario.title}» без критичных провалов. Следующий уровень — меньше общих действий и больше конкретики по данным, рискам и владельцам.`
+      : `You completed “${scenario.title}” without critical misses. The next level is fewer generic actions and more specificity around data, risks, and owners.`,
+    recommendations: isRu
+      ? ["Перед решением формулируй гипотезу", "Показывай, какие данные нужны", "Назначай владельцев и сроки", "Отдельно проговаривай риски"]
+      : ["State the hypothesis before deciding", "Show what data is needed", "Assign owners and dates", "Call out risks separately"],
+  };
+}
 
 export const generateReport = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => ReportInput.parse(d))
