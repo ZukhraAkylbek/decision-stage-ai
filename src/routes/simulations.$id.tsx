@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SkillRadar } from "@/components/SkillRadar";
+
 import { getScenario, type Scenario } from "@/lib/scenarios";
 import { reactToDecision, generateReport } from "@/lib/simulation.functions";
 import {
