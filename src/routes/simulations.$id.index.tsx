@@ -11,6 +11,7 @@ import { useI18n, useT } from "@/lib/i18n";
 import {
   ArrowLeft,
   BarChart3,
+  ClipboardList,
   FileText,
   Loader2,
   MessageSquare,
@@ -51,6 +52,32 @@ export const Route = createFileRoute("/simulations/$id/")({
 
 type HistoryItem = { step: number; decision: string; reaction: string };
 type LiveMetric = { label: string; value: string; delta?: string; trend?: "up" | "down" | "flat" };
+
+function resourceDetail(resource: string, scenario: Scenario, step: number) {
+  const lower = resource.toLowerCase();
+  const metric = scenario.metrics[(step - 1) % scenario.metrics.length];
+  const message = scenario.messages[(step - 1) % Math.max(1, scenario.messages.length)];
+  const update = scenario.updates[(step - 1) % Math.max(1, scenario.updates.length)];
+
+  if (lower.includes("конкур") || lower.includes("competitor") || lower.includes("teardown")) {
+    return `Главный конкурент уже продвигает похожее решение. Сильная сторона — скорость запуска и ясный value proposition; слабая — слабая интеграция в текущий workflow клиентов ${scenario.company.name}.`;
+  }
+  if (lower.includes("интерв") || lower.includes("interview") || lower.includes("feedback")) {
+    return message
+      ? `${message.from} (${message.role}): «${message.text}» Дополнительный сигнал: клиенты хотят меньше ручной работы и более понятный результат.`
+      : `В интервью чаще всего повторяется запрос на более быстрый workflow и понятный ROI.`;
+  }
+  if (lower.includes("ёмкость") || lower.includes("capacity") || lower.includes("cost") || lower.includes("стоим")) {
+    return `Предварительная оценка: MVP потребует 2–3 инженеров на 4–6 недель. Самые дорогие зоны — интеграции, качество данных и UX для первого запуска.`;
+  }
+  if (lower.includes("analytics") || lower.includes("dashboard") || lower.includes("аналит")) {
+    return `${metric.label}: ${metric.value}${metric.delta ? ` (${metric.delta})` : ""}. Тренд требует проверить сегменты и сравнить поведение до/после последних изменений.`;
+  }
+  if (lower.includes("risk") || lower.includes("риск") || lower.includes("error") || lower.includes("лог")) {
+    return update ? `Последний сигнал: ${update.text}. Риск: решение без быстрого owner-а и срока может усилить давление стейкхолдеров.` : `Основной риск — потеря времени на обсуждение без явного владельца следующего шага.`;
+  }
+  return `${resource}: рабочий артефакт для сценария «${scenario.scenario}». Используй его, чтобы уточнить гипотезу, риски и следующий шаг.`;
+}
 
 function SimulationRunner() {
   const { scenarioId } = Route.useLoaderData();
