@@ -2,6 +2,7 @@ import { Badge } from "@/components/ui/badge";
 import { Link } from "@tanstack/react-router";
 import type { Scenario } from "@/lib/scenarios";
 import { Bookmark, Clock } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 
 const categoryColor: Record<string, string> = {
   Analytics: "bg-accent text-accent-foreground",
@@ -13,6 +14,7 @@ const categoryColor: Record<string, string> = {
 };
 
 export function ScenarioCard({ scenario }: { scenario: Scenario }) {
+  const { tCategory, tLevel } = useI18n();
   return (
     <Link
       to="/simulations/$id"
@@ -31,7 +33,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
             categoryColor[scenario.category] ?? "bg-secondary text-secondary-foreground"
           }`}
         >
-          {scenario.category}
+          {tCategory(scenario.category)}
         </span>
       </div>
       <p className="mt-3 text-sm text-muted-foreground line-clamp-2 min-h-[40px]">
@@ -39,7 +41,7 @@ export function ScenarioCard({ scenario }: { scenario: Scenario }) {
       </p>
       <div className="mt-4 pt-4 border-t flex items-center justify-between text-xs text-muted-foreground">
         <Badge variant="secondary" className="font-normal">
-          {scenario.level}
+          {tLevel(scenario.level)}
         </Badge>
         <span className="inline-flex items-center gap-1">
           <Clock className="size-3" />

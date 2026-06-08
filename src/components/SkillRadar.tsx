@@ -6,11 +6,22 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
-import { SKILL_LABELS, type SkillKey } from "@/lib/scenarios";
+import { type SkillKey } from "@/lib/scenarios";
+import { useT } from "@/lib/i18n";
+
+const SKILL_TKEYS: Record<SkillKey, string> = {
+  productThinking: "skill.productThinking",
+  analytics: "skill.analytics",
+  communication: "skill.communication",
+  prioritization: "skill.prioritization",
+  execution: "skill.execution",
+  riskManagement: "skill.riskManagement",
+};
 
 export function SkillRadar({ skills }: { skills: Record<SkillKey, number> }) {
-  const data = (Object.keys(SKILL_LABELS) as SkillKey[]).map((k) => ({
-    skill: SKILL_LABELS[k],
+  const t = useT();
+  const data = (Object.keys(SKILL_TKEYS) as SkillKey[]).map((k) => ({
+    skill: t(SKILL_TKEYS[k]),
     value: skills[k],
   }));
   return (

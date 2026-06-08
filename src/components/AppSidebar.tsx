@@ -9,18 +9,20 @@ import {
   Flame,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useI18n } from "@/lib/i18n";
 
 const nav = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
-  { to: "/simulations", label: "Simulations", icon: Gamepad2 },
-  { to: "/progress", label: "My Progress", icon: TrendingUp },
-  { to: "/reports", label: "Reports", icon: FileBarChart },
-  { to: "/leaderboard", label: "Leaderboard", icon: Trophy },
-  { to: "/resources", label: "Resources", icon: BookOpen },
+  { to: "/", key: "nav.dashboard", icon: LayoutDashboard },
+  { to: "/simulations", key: "nav.simulations", icon: Gamepad2 },
+  { to: "/progress", key: "nav.progress", icon: TrendingUp },
+  { to: "/reports", key: "nav.reports", icon: FileBarChart },
+  { to: "/leaderboard", key: "nav.leaderboard", icon: Trophy },
+  { to: "/resources", key: "nav.resources", icon: BookOpen },
 ] as const;
 
 export function AppSidebar() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const { t, lang, setLang } = useI18n();
 
   return (
     <aside className="hidden md:flex w-[240px] flex-col bg-sidebar text-sidebar-foreground shrink-0 sticky top-0 h-screen">
@@ -54,21 +56,46 @@ export function AppSidebar() {
               )}
             >
               <item.icon className="size-4" />
-              {item.label}
+              {t(item.key)}
             </Link>
           );
         })}
       </nav>
 
-      <div className="px-3 py-4">
+      <div className="px-3 pt-4 pb-2">
         <div className="rounded-xl bg-white/5 p-4 border border-white/5">
           <div className="text-[11px] text-sidebar-foreground/60 uppercase tracking-wider">
-            Current Streak
+            {t("sidebar.streak")}
           </div>
           <div className="mt-1 flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">7 days</span>
+            <span className="text-2xl font-bold text-white">
+              {t("sidebar.streakDays", { n: 7 })}
+            </span>
             <Flame className="size-5 text-warning" />
           </div>
+        </div>
+      </div>
+
+      <div className="px-3 pb-3">
+        <div className="text-[11px] text-sidebar-foreground/60 uppercase tracking-wider px-1 mb-1.5">
+          {t("sidebar.language")}
+        </div>
+        <div className="inline-flex rounded-lg bg-white/5 border border-white/5 p-0.5 w-full">
+          {(["ru", "en"] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => setLang(l)}
+              className={cn(
+                "flex-1 rounded-md px-3 py-1.5 text-xs font-medium uppercase tracking-wider transition-colors",
+                lang === l
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground shadow-glow"
+                  : "text-sidebar-foreground/70 hover:text-white",
+              )}
+            >
+              {l}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -78,7 +105,7 @@ export function AppSidebar() {
         </div>
         <div className="flex-1 leading-tight">
           <div className="text-sm font-medium text-white">Alex Johnson</div>
-          <div className="text-xs text-sidebar-foreground/60">Student</div>
+          <div className="text-xs text-sidebar-foreground/60">{t("sidebar.userRole")}</div>
         </div>
       </div>
     </aside>
