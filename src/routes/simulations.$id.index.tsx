@@ -161,6 +161,7 @@ function InfoLine({ label, value }: { label: string; value: string }) {
 
 /* ---------- RUNNING ---------- */
 function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () => void }) {
+  const { t, tRole, lang } = useI18n();
   const react = useServerFn(reactToDecision);
   const navigate = useNavigate();
 
@@ -186,6 +187,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
           totalSteps: scenario.totalSteps,
           decision: text,
           history,
+          language: lang,
         },
       });
 
@@ -220,6 +222,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
           data: {
             scenarioId: scenario.id,
             history: [...history, { step, decision: text, reaction: res.reaction }],
+            language: lang,
           },
         });
         try {
@@ -235,7 +238,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
       setStep((s) => s + 1);
     } catch (e) {
       console.error(e);
-      setLastReaction("(The simulation engine had a hiccup. Try a different action.)");
+      setLastReaction(t("run.errorHiccup"));
     } finally {
       setPending(false);
     }
@@ -247,17 +250,17 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
         {/* Top bar */}
         <div className="flex items-center justify-between mb-6">
           <Link to="/simulations" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1">
-            <ArrowLeft className="size-4" /> Back to Simulations
+            <ArrowLeft className="size-4" /> {t("card.backToSims")}
           </Link>
           <div className="text-sm font-medium">
-            {scenario.role} Simulation · <span className="text-muted-foreground">Step {step} of {scenario.totalSteps}</span>
+            {tRole(scenario.role)} {t("run.simulationSuffix")} · <span className="text-muted-foreground">{t("run.stepOf", { n: step, total: scenario.totalSteps })}</span>
           </div>
           <div className="flex items-center gap-3">
             <div className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-mono">
               <Timer className="size-3.5 text-muted-foreground" /> 24:35
             </div>
             <Button variant="outline" size="sm" onClick={() => navigate({ to: "/simulations" })}>
-              End Simulation
+              {t("run.end")}
             </Button>
           </div>
         </div>
@@ -268,17 +271,17 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             <div className="rounded-2xl border bg-card p-6 shadow-card">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <div className="text-xs uppercase tracking-wider text-muted-foreground">Scenario</div>
+                  <div className="text-xs uppercase tracking-wider text-muted-foreground">{t("run.scenario")}</div>
                   <h1 className="mt-1 text-2xl font-bold tracking-tight">{scenario.scenario}</h1>
                 </div>
                 <div className="rounded-lg bg-secondary/60 p-3 text-xs max-w-[220px]">
-                  <div className="font-medium text-muted-foreground">Company Goal</div>
+                  <div className="font-medium text-muted-foreground">{t("run.companyGoal")}</div>
                   <div className="mt-1 text-foreground">{scenario.companyGoal}</div>
                 </div>
               </div>
               <p className="mt-3 text-sm text-muted-foreground">{scenario.briefing}</p>
 
-              <h3 className="mt-6 font-semibold text-sm">Key Metrics</h3>
+              <h3 className="mt-6 font-semibold text-sm">{t("run.keyMetrics")}</h3>
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-3">
                 {metrics.map((m) => (
                   <MetricCard key={m.label} metric={m} />
@@ -288,7 +291,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
               {lastReaction && (
                 <div className="mt-6 rounded-lg border border-primary/20 bg-primary/5 p-4">
                   <div className="flex items-center gap-2 text-xs font-medium text-primary uppercase tracking-wider">
-                    <Sparkles className="size-3.5" /> Reaction
+                    <Sparkles className="size-3.5" /> {t("run.reaction")}
                   </div>
                   <p className="mt-1.5 text-sm text-foreground">{lastReaction}</p>
                 </div>
@@ -296,7 +299,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             </div>
 
             <div className="rounded-2xl border bg-card p-6 shadow-card">
-              <h3 className="font-semibold">Recent Updates</h3>
+              <h3 className="font-semibold">{t("run.recentUpdates")}</h3>
               <div className="mt-3 space-y-2.5">
                 {updates.map((u, i) => (
                   <div key={i} className="flex gap-3 text-sm">
@@ -310,8 +313,8 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
 
             {/* Decision */}
             <div className="rounded-2xl border bg-card p-6 shadow-card">
-              <h3 className="font-semibold">Your Decision</h3>
-              <p className="text-xs text-muted-foreground mt-0.5">What will you do next?</p>
+              <h3 className="font-semibold">{t("run.yourDecision")}</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">{t("run.yourDecisionSub")}</p>
 
               <div className="mt-4 flex flex-wrap gap-2">
                 {suggested.map((a) => (
@@ -340,11 +343,11 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
                 <Input
                   value={decision}
                   onChange={(e) => setDecision(e.target.value)}
-                  placeholder="Or write your own action…"
+                  placeholder={t("run.placeholder")}
                   disabled={pending}
                 />
                 <Button type="submit" disabled={pending || !decision.trim()} className="bg-gradient-primary text-primary-foreground shadow-glow">
-                  {pending ? <Loader2 className="size-4 animate-spin" /> : <><Send className="size-4" /> Submit</>}
+                  {pending ? <Loader2 className="size-4 animate-spin" /> : <><Send className="size-4" /> {t("run.submit")}</>}
                 </Button>
               </form>
             </div>
@@ -355,7 +358,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             <div className="rounded-2xl border bg-card p-6 shadow-card">
               <div className="flex items-center gap-2 mb-4 border-b pb-3">
                 <MessageSquare className="size-4 text-primary" />
-                <span className="font-semibold text-sm">Messages</span>
+                <span className="font-semibold text-sm">{t("run.messages")}</span>
               </div>
               <div className="space-y-4 max-h-[420px] overflow-y-auto pr-1">
                 {messages.map((m, i) => (
@@ -376,7 +379,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             </div>
 
             <div className="rounded-2xl border bg-card p-6 shadow-card">
-              <h3 className="font-semibold text-sm mb-3">Available Data & Resources</h3>
+              <h3 className="font-semibold text-sm mb-3">{t("run.resources")}</h3>
               <div className="space-y-2">
                 {scenario.resources.map((r) => (
                   <div key={r} className="flex items-center gap-3 rounded-lg border p-3 text-sm">
@@ -392,7 +395,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
 
             {/* Step timeline */}
             <div className="rounded-2xl border bg-card p-6 shadow-card">
-              <h3 className="font-semibold text-sm mb-3">Decision Timeline</h3>
+              <h3 className="font-semibold text-sm mb-3">{t("run.timeline")}</h3>
               <div className="flex flex-wrap items-center gap-1.5">
                 {Array.from({ length: scenario.totalSteps }, (_, i) => i + 1).map((n) => (
                   <div
