@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 
 import { getScenario, type Scenario } from "@/lib/scenarios";
 import { reactToDecision, generateReport } from "@/lib/simulation.functions";
+import { useI18n, useT } from "@/lib/i18n";
 import {
   ArrowLeft,
   BarChart3,
@@ -28,18 +29,17 @@ export const Route = createFileRoute("/simulations/$id/")({
   loader: ({ params }) => {
     const s = getScenario(params.id);
     if (!s) throw notFound();
-    return { scenario: s };
+    return { scenarioId: s.id };
   },
   head: ({ loaderData }) => ({
     meta: [
-      { title: `${loaderData?.scenario.title ?? "Simulation"} — ProductPush` },
-      { name: "description", content: loaderData?.scenario.briefing ?? "" },
+      { title: `ProductPush — ${loaderData?.scenarioId ?? "Simulation"}` },
     ],
   }),
   component: SimulationRunner,
   notFoundComponent: () => (
     <AppShell>
-      <div className="p-10">Scenario not found.</div>
+      <div className="p-10">Сценарий не найден.</div>
     </AppShell>
   ),
   errorComponent: ({ error }) => (
@@ -53,8 +53,18 @@ type HistoryItem = { step: number; decision: string; reaction: string };
 type LiveMetric = { label: string; value: string; delta?: string; trend?: "up" | "down" | "flat" };
 
 function SimulationRunner() {
-  const { scenario } = Route.useLoaderData();
+  const { scenarioId } = Route.useLoaderData();
+  const { getScenario } = useI18n();
+  const scenario = getScenario(scenarioId);
   const [phase, setPhase] = useState<"briefing" | "running" | "complete">("briefing");
+
+  if (!scenario) {
+    return (
+      <AppShell>
+        <div className="p-10">Сценарий не найден.</div>
+      </AppShell>
+    );
+  }
 
   if (phase === "briefing") return <Briefing scenario={scenario} onStart={() => setPhase("running")} />;
   if (phase === "running") return <Running scenario={scenario} onComplete={() => setPhase("complete")} />;
@@ -63,19 +73,20 @@ function SimulationRunner() {
 
 /* ---------- BRIEFING ---------- */
 function Briefing({ scenario, onStart }: { scenario: Scenario; onStart: () => void }) {
+  const { t, tRole, tLevel } = useI18n();
   return (
     <AppShell>
       <div className="px-6 lg:px-10 py-8 max-w-5xl mx-auto">
         <Link to="/simulations" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground gap-1 mb-6">
-          <ArrowLeft className="size-4" /> Back
+          <ArrowLeft className="size-4" /> {t("card.back")}
         </Link>
 
         <div className="grid lg:grid-cols-[1.2fr_1fr] gap-6">
           <div className="rounded-2xl border bg-card p-6 shadow-card">
             <div className="flex items-center justify-between mb-4">
-              <div className="text-sm font-medium text-muted-foreground">Scenario Briefing</div>
+              <div className="text-sm font-medium text-muted-foreground">{t("brief.label")}</div>
               <Button onClick={onStart} className="bg-gradient-primary text-primary-foreground shadow-glow">
-                Start Simulation
+                {t("brief.start")}
               </Button>
             </div>
 
@@ -90,7 +101,7 @@ function Briefing({ scenario, onStart }: { scenario: Scenario; onStart: () => vo
             <h1 className="text-2xl font-bold tracking-tight">{scenario.title}</h1>
             <p className="mt-2 text-muted-foreground">{scenario.briefing}</p>
 
-            <h3 className="mt-6 font-semibold">Your Objectives</h3>
+            <h3 className="mt-6 font-semibold">{t("brief.h.objectives")}</h3>
             <ul className="mt-2 space-y-1.5">
               {scenario.objectives.map((o) => (
                 <li key={o} className="flex gap-2 text-sm">
@@ -100,13 +111,13 @@ function Briefing({ scenario, onStart }: { scenario: Scenario; onStart: () => vo
             </ul>
 
             <div className="mt-6 grid grid-cols-2 gap-4">
-              <InfoBox label="Duration" value={scenario.durationMin} />
-              <InfoBox label="Difficulty" value={scenario.level} />
-              <InfoBox label="Steps" value={String(scenario.totalSteps)} />
-              <InfoBox label="Role" value={scenario.role} />
+              <InfoBox label={t("brief.info.duration")} value={scenario.durationMin} />
+              <InfoBox label={t("brief.info.difficulty")} value={tLevel(scenario.level)} />
+              <InfoBox label={t("brief.info.steps")} value={String(scenario.totalSteps)} />
+              <InfoBox label={t("brief.info.role")} value={tRole(scenario.role)} />
             </div>
 
-            <h3 className="mt-6 font-semibold">You will be evaluated on</h3>
+            <h3 className="mt-6 font-semibold">{t("brief.h.evaluated")}</h3>
             <div className="mt-2 flex flex-wrap gap-2">
               {scenario.evaluatedOn.map((e) => (
                 <span key={e} className="rounded-md bg-accent text-accent-foreground text-xs font-medium px-2 py-1">
@@ -117,12 +128,12 @@ function Briefing({ scenario, onStart }: { scenario: Scenario; onStart: () => vo
           </div>
 
           <div className="rounded-2xl border bg-card p-6 shadow-card h-fit">
-            <h3 className="font-semibold mb-3">About the Company</h3>
+            <h3 className="font-semibold mb-3">{t("brief.h.about")}</h3>
             <p className="text-sm text-muted-foreground">{scenario.company.about}</p>
             <div className="mt-4 space-y-3 text-sm">
-              <InfoLine label="Employees" value={scenario.company.employees} />
-              <InfoLine label="Products" value={scenario.company.products} />
-              <InfoLine label="Market" value={scenario.company.market} />
+              <InfoLine label={t("brief.info.employees")} value={scenario.company.employees} />
+              <InfoLine label={t("brief.info.products")} value={scenario.company.products} />
+              <InfoLine label={t("brief.info.market")} value={scenario.company.market} />
             </div>
           </div>
         </div>
