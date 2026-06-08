@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 
 import { getScenario, type Scenario } from "@/lib/scenarios";
 import { reactToDecision, generateReport } from "@/lib/simulation.functions";
-import { useI18n, useT } from "@/lib/i18n";
+import { useI18n } from "@/lib/i18n";
 import {
   ArrowLeft,
   BarChart3,
