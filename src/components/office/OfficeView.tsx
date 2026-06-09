@@ -162,24 +162,24 @@ export function OfficeView(props: OfficeViewProps) {
       </div>
 
       {/* Stage: positioned overlays on the photoreal scene */}
-      <div className="relative w-full" style={{ aspectRatio: "16 / 9", minHeight: 520 }}>
+      <div className="relative w-full" style={{ aspectRatio: "16 / 9", minHeight: 540 }}>
         {/* Whiteboard handwritten overlay — anchored on the whiteboard area of the bg */}
         <button
           type="button"
           onClick={() => setOpen("whiteboard")}
           className="absolute group cursor-pointer text-left"
-          style={{ left: "29%", top: "22%", width: "42%", height: "44%" }}
+          style={{ left: "28%", top: "9%", width: "46%", height: "50%" }}
           aria-label={t("office.whiteboard")}
         >
           <WhiteboardWriting scenario={scenario} metrics={props.metrics} step={step} />
           <span className="absolute inset-0 rounded-md ring-0 group-hover:ring-2 ring-amber-300/50 transition" />
         </button>
 
-        {/* Desk objects row — bottom area of the photo */}
-        <div className="absolute inset-x-0 bottom-0 h-[42%] pointer-events-none">
-          {/* Docs (left) */}
+        {/* Desk objects row — bottom wooden desk surface */}
+        <div className="absolute inset-x-0 bottom-0 h-[44%] pointer-events-none">
+          {/* Docs (left, on desk) */}
           <DeskPhotoObject
-            style={{ left: "8%", bottom: "8%", width: "22%" }}
+            style={{ left: "10%", bottom: "10%", width: "17%" }}
             src={docsImg}
             label={t("office.docs")}
             ariaLabel={t("office.openDocs")}
@@ -190,9 +190,9 @@ export function OfficeView(props: OfficeViewProps) {
             count={visibleResourceCount}
           />
 
-          {/* Laptop (center) */}
+          {/* Laptop (center, front-facing) */}
           <DeskPhotoObject
-            style={{ left: "36%", bottom: "2%", width: "30%" }}
+            style={{ left: "33%", bottom: "4%", width: "34%" }}
             src={laptopImg}
             label={t("office.computer")}
             ariaLabel={t("office.openComputer")}
@@ -201,9 +201,9 @@ export function OfficeView(props: OfficeViewProps) {
             glow
           />
 
-          {/* Phone (right) */}
+          {/* Phone (right, on desk) */}
           <DeskPhotoObject
-            style={{ right: "8%", bottom: "6%", width: "13%" }}
+            style={{ right: "11%", bottom: "12%", width: "8.5%" }}
             src={phoneImg}
             label={t("office.phone")}
             ariaLabel={t("office.openPhone")}
