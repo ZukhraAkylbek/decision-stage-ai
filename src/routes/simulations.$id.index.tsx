@@ -1,9 +1,11 @@
 import { createFileRoute, Link, useNavigate, notFound } from "@tanstack/react-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { AppShell } from "@/components/AppShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { OfficeView } from "@/components/office/OfficeView";
+
 
 import { getScenario, type Scenario } from "@/lib/scenarios";
 import { reactToDecision, generateReport } from "@/lib/simulation.functions";
@@ -212,6 +214,38 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
   const [suggested, setSuggested] = useState(scenario.suggestedActions);
   const [lastReaction, setLastReaction] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState(scenario.resources[0] ?? "");
+  const [viewMode, setViewMode] = useState<"office" | "classic">(() => {
+    if (typeof window === "undefined") return "office";
+    return (localStorage.getItem("pp:viewMode") as "office" | "classic") || "office";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("pp:viewMode", viewMode); } catch {}
+  }, [viewMode]);
+
+  const viewToggle = (
+    <div className="inline-flex rounded-md border bg-card/90 p-0.5 text-xs font-medium">
+      <button
+        type="button"
+        onClick={() => setViewMode("classic")}
+        className={cn(
+          "px-2.5 py-1 rounded",
+          viewMode === "classic" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        {t("view.classic")}
+      </button>
+      <button
+        type="button"
+        onClick={() => setViewMode("office")}
+        className={cn(
+          "px-2.5 py-1 rounded",
+          viewMode === "office" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground",
+        )}
+      >
+        {t("view.office")}
+      </button>
+    </div>
+  );
 
   async function submit(text: string) {
     if (!text.trim() || pending) return;
@@ -284,6 +318,31 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
     }
   }
 
+  if (viewMode === "office") {
+    return (
+      <AppShell>
+        <OfficeView
+          scenario={scenario}
+          step={step}
+          totalSteps={scenario.totalSteps}
+          decision={decision}
+          setDecision={setDecision}
+          pending={pending}
+          history={history}
+          metrics={metrics}
+          updates={updates}
+          messages={messages}
+          suggested={suggested}
+          lastReaction={lastReaction}
+          selectedResource={selectedResource}
+          setSelectedResource={setSelectedResource}
+          submit={submit}
+          viewToggle={viewToggle}
+        />
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell>
       <div className="px-6 lg:px-10 py-6 max-w-[1400px] mx-auto">
@@ -296,6 +355,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             {tRole(scenario.role)} {t("run.simulationSuffix")} · <span className="text-muted-foreground">{t("run.stepOf", { n: step, total: scenario.totalSteps })}</span>
           </div>
           <div className="flex items-center gap-3">
+            {viewToggle}
             <div className="inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-sm font-mono">
               <Timer className="size-3.5 text-muted-foreground" /> 24:35
             </div>
@@ -304,6 +364,7 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
             </Button>
           </div>
         </div>
+
 
         <div className="grid lg:grid-cols-[1.5fr_1fr] gap-6">
           {/* LEFT */}

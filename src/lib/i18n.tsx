@@ -132,6 +132,26 @@ const EN: Dict = {
   "level.Junior": "Junior",
   "level.Mid-level": "Mid-level",
   "level.Senior": "Senior",
+  // office mode
+  "view.classic": "Classic",
+  "view.office": "Office",
+  "office.whiteboard": "Whiteboard",
+  "office.scenario": "Scenario",
+  "office.goal": "Company Goal",
+  "office.metrics": "Key Metrics",
+  "office.events": "Latest Events",
+  "office.computer": "Computer",
+  "office.docs": "Documents",
+  "office.phone": "Phone",
+  "office.openComputer": "Open laptop",
+  "office.openDocs": "Open documents",
+  "office.openPhone": "Pick up phone",
+  "office.day.Mon": "Mon",
+  "office.day.Tue": "Tue",
+  "office.day.Wed": "Wed",
+  "office.day.Thu": "Thu",
+  "office.day.Fri": "Fri",
+  "office.week": "Week {n}",
 };
 
 const RU: Dict = {
@@ -246,6 +266,26 @@ const RU: Dict = {
   "level.Junior": "Junior",
   "level.Mid-level": "Middle",
   "level.Senior": "Senior",
+  // office mode
+  "view.classic": "Классика",
+  "view.office": "Офис",
+  "office.whiteboard": "Доска",
+  "office.scenario": "Сценарий",
+  "office.goal": "Цель компании",
+  "office.metrics": "Ключевые метрики",
+  "office.events": "Последние события",
+  "office.computer": "Компьютер",
+  "office.docs": "Документы",
+  "office.phone": "Телефон",
+  "office.openComputer": "Открыть ноутбук",
+  "office.openDocs": "Открыть документы",
+  "office.openPhone": "Взять телефон",
+  "office.day.Mon": "Пн",
+  "office.day.Tue": "Вт",
+  "office.day.Wed": "Ср",
+  "office.day.Thu": "Чт",
+  "office.day.Fri": "Пт",
+  "office.week": "Неделя {n}",
 };
 
 const DICTS: Record<Lang, Dict> = { ru: RU, en: EN };
