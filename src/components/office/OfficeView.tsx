@@ -846,17 +846,17 @@ function PhonePanel({
   const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
 
   return (
-    <div className="flex justify-center p-4 bg-[oklch(0.15_0.02_265)]">
+    <div className="flex justify-center p-3 bg-[oklch(0.15_0.02_265)]">
       <div
-        className="relative w-full max-w-[360px] rounded-[44px] p-3"
+        className="relative w-full max-w-[320px] rounded-[40px] p-2.5"
         style={{
           background: "linear-gradient(180deg, oklch(0.22 0.02 265), oklch(0.14 0.02 265))",
           border: "1px solid oklch(0.3 0.02 265)",
           boxShadow: "0 30px 60px -10px rgba(0,0,0,0.6)",
         }}
       >
-        <div className="absolute left-1/2 -translate-x-1/2 top-4 h-6 w-32 rounded-full bg-black/80 z-10" />
-        <div className="rounded-[34px] overflow-hidden bg-background min-h-[540px] flex flex-col">
+        <div className="absolute left-1/2 -translate-x-1/2 top-3.5 h-5 w-28 rounded-full bg-black/80 z-10" />
+        <div className="rounded-[32px] overflow-hidden bg-background h-[min(78vh,640px)] flex flex-col">
           <div className="flex items-center justify-between px-6 pt-3 pb-2 text-[11px] font-semibold">
             <span>{timeStr}</span>
             <div className="flex items-center gap-1 text-foreground/70">
