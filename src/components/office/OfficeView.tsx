@@ -342,7 +342,7 @@ function ObjectModal({
               <X className="size-4" />
             </button>
           </div>
-          <div className="max-h-[78vh] overflow-y-auto">{children}</div>
+          <div className="max-h-[88vh] overflow-y-auto">{children}</div>
         </div>
       </div>
     </div>
