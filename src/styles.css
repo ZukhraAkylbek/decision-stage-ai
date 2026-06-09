@@ -210,3 +210,58 @@
 .office-screen-on { animation: office-screen-on 0.55s cubic-bezier(.2,.9,.3,1.05); transform-origin: bottom; }
 .office-metric-flip { animation: office-metric-flip 0.4s ease-out; }
 .office-walker { animation: office-walk 22s linear infinite; }
+
+/* Photoreal Office Mode — new keyframes */
+@keyframes office-laptop-open {
+  0%   { transform: perspective(1400px) rotateX(-92deg) translateY(40px) scale(0.85); opacity: 0; filter: brightness(0.5); }
+  55%  { transform: perspective(1400px) rotateX(6deg)   translateY(0)    scale(1);    opacity: 1; filter: brightness(1.05); }
+  100% { transform: perspective(1400px) rotateX(0)      translateY(0)    scale(1);    opacity: 1; filter: brightness(1); }
+}
+.office-laptop-open { animation: office-laptop-open 0.7s cubic-bezier(.2,.85,.25,1.05); transform-origin: bottom center; }
+
+@keyframes office-phone-lift {
+  0%   { transform: translateY(110%) rotate(-6deg) scale(0.85); opacity: 0; }
+  60%  { transform: translateY(-8px) rotate(2deg)  scale(1.02); opacity: 1; }
+  100% { transform: translateY(0)    rotate(0)     scale(1);    opacity: 1; }
+}
+.office-phone-lift { animation: office-phone-lift 0.65s cubic-bezier(.2,.9,.25,1.1); transform-origin: bottom center; }
+
+@keyframes office-docs-fan {
+  0%   { transform: scale(0.6) rotate(-10deg); opacity: 0; filter: blur(6px); }
+  60%  { transform: scale(1.04) rotate(2deg);  opacity: 1; filter: blur(0);  }
+  100% { transform: scale(1) rotate(0);        opacity: 1; }
+}
+.office-docs-fan { animation: office-docs-fan 0.55s cubic-bezier(.2,.85,.3,1.1); transform-origin: center; }
+
+@keyframes office-sheet-deal {
+  0%   { transform: translateY(-30px) rotate(var(--r-from, -8deg)) scale(0.9); opacity: 0; }
+  100% { transform: translateY(0)     rotate(var(--r-to, 0deg))    scale(1);   opacity: 1; }
+}
+.office-sheet-deal { animation: office-sheet-deal 0.55s cubic-bezier(.2,.85,.3,1.1) both; }
+
+@keyframes office-backdrop-in {
+  from { opacity: 0; backdrop-filter: blur(0); }
+  to   { opacity: 1; backdrop-filter: blur(8px); }
+}
+.office-backdrop-in { animation: office-backdrop-in 0.3s ease-out both; }
+
+@keyframes office-write {
+  from { stroke-dashoffset: 1000; opacity: 0; }
+  to   { stroke-dashoffset: 0;    opacity: 1; }
+}
+
+@keyframes office-handwrite {
+  0%   { opacity: 0; transform: translateY(4px); filter: blur(2px); }
+  100% { opacity: 1; transform: translateY(0);   filter: blur(0);   }
+}
+.office-handwrite { animation: office-handwrite 0.5s ease-out both; }
+
+/* Floating hint pulse on objects */
+@keyframes office-hover-bob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-3px); }
+}
+.office-bob { animation: office-hover-bob 3.6s ease-in-out infinite; }
+
+.font-handwriting { font-family: "Caveat", "Kalam", cursive; }
+.font-marker      { font-family: "Permanent Marker", "Caveat", cursive; }
