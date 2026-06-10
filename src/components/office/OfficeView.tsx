@@ -28,6 +28,10 @@ import officeBg from "@/assets/office-bg.jpg";
 import laptopImg from "@/assets/office-laptop.png";
 import phoneImg from "@/assets/office-phone.png";
 import docsImg from "@/assets/office-docs.png";
+import mugImg from "@/assets/office-mug.png";
+import plantImg from "@/assets/office-plant.png";
+import stickyImg from "@/assets/office-stickynote.png";
+import notebookImg from "@/assets/office-notebook.png";
 
 type LiveMetric = { label: string; value: string; delta?: string; trend?: "up" | "down" | "flat" };
 type HistoryItem = { step: number; decision: string; reaction: string };
