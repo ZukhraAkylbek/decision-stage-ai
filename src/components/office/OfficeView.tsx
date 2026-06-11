@@ -176,6 +176,7 @@ export function OfficeView(props: OfficeViewProps) {
             <OfficeClock step={step} totalSteps={totalSteps} />
           </div>
           <div className="flex items-center gap-2">
+            {props.timerChip}
             {props.viewToggle}
             <Button
               variant="outline"
