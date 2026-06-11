@@ -510,6 +510,47 @@ export const SCENARIOS: Scenario[] = [
     resources: ["Q3 Roadmap", "Revenue Forecast", "Customer Interviews"],
     suggestedActions: ["Open with framing", "Share data", "Ask clarifying question", "Propose adjustment"],
   },
+  {
+    id: "exam-telecom-final",
+    title: "Final Exam — Telecom PM",
+    role: "Product Manager",
+    category: "Strategy",
+    level: "Senior",
+    durationMin: "60 min",
+    totalSteps: 6,
+    isExam: true,
+    examDurationMin: 60,
+    industry: "telecom",
+    company: {
+      name: "O! Telecom",
+      about: "National mobile operator with 4.5M subscribers facing churn pressure from new MVNO entrants.",
+      employees: "3500",
+      products: "Mobile, Fiber, B2B",
+      market: "Telecom",
+    },
+    scenario: "Defend the Q4 retention strategy in front of the executive board",
+    briefing:
+      "60-minute final exam. No suggested answers — you write everything yourself, attach external docs (Notion/Google Docs links) where needed. Timer is hard.",
+    companyGoal: "Cut churn from 3.8% to 2.5% in 90 days without margin loss.",
+    objectives: [
+      "Diagnose churn root causes",
+      "Propose a 90-day retention plan",
+      "Defend it to the board",
+    ],
+    evaluatedOn: ["Product Thinking", "Analytics", "Communication", "Prioritization", "Risk Management"],
+    metrics: [
+      { label: "Churn", value: "3.8%", delta: "+0.6 pts QoQ", trend: "down" },
+      { label: "ARPU", value: "$11.20", trend: "flat" },
+      { label: "NPS", value: "28", delta: "-4", trend: "down" },
+      { label: "MVNO Share", value: "12%", delta: "+5 pts", trend: "down" },
+    ],
+    updates: [{ time: "Day 0", text: "Board meeting scheduled in 60 minutes" }],
+    messages: [
+      { from: "CEO", role: "Executive", time: "Now", text: "I want a written plan with links to your TZ — no slides." },
+    ],
+    resources: ["Churn cohort data", "Competitor tariffs", "Support call logs"],
+    suggestedActions: [],
+  },
 ];
 
 export function getScenario(id: string): Scenario | undefined {
