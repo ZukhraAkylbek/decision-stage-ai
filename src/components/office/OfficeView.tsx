@@ -419,6 +419,9 @@ export function OfficeView(props: OfficeViewProps) {
             totalSteps={totalSteps}
             lastReaction={props.lastReaction}
             history={props.history}
+            isExam={!!props.isExam}
+            externalLink={props.examExternalLink ?? ""}
+            setExternalLink={props.setExamExternalLink ?? (() => {})}
           />
         </ObjectModal>
       )}
