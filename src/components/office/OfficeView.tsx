@@ -789,6 +789,9 @@ function ComputerPanel({
   totalSteps,
   lastReaction,
   history,
+  isExam,
+  externalLink,
+  setExternalLink,
 }: {
   suggested: string[];
   decision: string;
@@ -799,6 +802,9 @@ function ComputerPanel({
   totalSteps: number;
   lastReaction: string | null;
   history: HistoryItem[];
+  isExam: boolean;
+  externalLink: string;
+  setExternalLink: (v: string) => void;
 }) {
   const { t } = useI18n();
   return (
@@ -808,56 +814,87 @@ function ComputerPanel({
         <span className="size-3 rounded-full bg-[oklch(0.8_0.16_85)]" />
         <span className="size-3 rounded-full bg-[oklch(0.7_0.15_145)]" />
         <span className="mx-auto text-[11px] font-medium text-muted-foreground">
-          {t("office.decisionCenter")} — Step {step}/{totalSteps}
+          {isExam ? "EXAM MODE" : t("office.decisionCenter")} — Step {step}/{totalSteps}
         </span>
       </div>
       <div className="p-5 md:p-6">
         <div>
-          <h3 className="font-semibold">{t("run.yourDecision")}</h3>
-          <p className="text-xs text-muted-foreground mt-0.5">{t("run.yourDecisionSub")}</p>
+          <h3 className="font-semibold">
+            {isExam ? "Exam answer (free-form)" : t("run.yourDecision")}
+          </h3>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            {isExam
+              ? "No suggested options. Write your full answer and attach an external doc link if needed."
+              : t("run.yourDecisionSub")}
+          </p>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
-          {suggested.map((a) => (
-            <button
-              key={a}
-              disabled={pending}
-              onClick={() => submit(a)}
-              className={cn(
-                "rounded-lg border px-3 py-2 text-sm text-left transition-all",
-                "hover:border-primary hover:bg-primary/5 hover:text-primary",
-                "disabled:opacity-50 disabled:cursor-not-allowed",
-              )}
-            >
-              {a}
-            </button>
-          ))}
-        </div>
+        {!isExam && (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {suggested.map((a) => (
+              <button
+                key={a}
+                disabled={pending}
+                onClick={() => submit(a)}
+                className={cn(
+                  "rounded-lg border px-3 py-2 text-sm text-left transition-all",
+                  "hover:border-primary hover:bg-primary/5 hover:text-primary",
+                  "disabled:opacity-50 disabled:cursor-not-allowed",
+                )}
+              >
+                {a}
+              </button>
+            ))}
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
             submit(decision);
           }}
-          className="mt-4 flex gap-2"
+          className={cn("mt-4", isExam ? "space-y-2" : "flex gap-2")}
         >
-          <Input
-            value={decision}
-            onChange={(e) => setDecision(e.target.value)}
-            placeholder={t("run.placeholder")}
-            disabled={pending}
-          />
-          <Button
-            type="submit"
-            disabled={pending || !decision.trim()}
-            className="bg-gradient-primary text-primary-foreground shadow-glow"
-          >
-            {pending ? (
-              <Loader2 className="size-4 animate-spin" />
-            ) : (
-              <>
-                <Send className="size-4" /> {t("run.submit")}
-              </>
-            )}
-          </Button>
+          {isExam ? (
+            <>
+              <Textarea
+                value={decision}
+                onChange={(e) => setDecision(e.target.value)}
+                placeholder="Write your full answer / decision / TZ here…"
+                disabled={pending}
+                className="min-h-[180px]"
+              />
+              <Input
+                value={externalLink}
+                onChange={(e) => setExternalLink(e.target.value)}
+                placeholder="External link (Notion / Google Docs / Figma URL)"
+                disabled={pending}
+              />
+              <div className="flex justify-end">
+                <Button
+                  type="submit"
+                  disabled={pending || !decision.trim()}
+                  className="bg-gradient-primary text-primary-foreground shadow-glow"
+                >
+                  {pending ? <Loader2 className="size-4 animate-spin" /> : <><Send className="size-4" /> {t("run.submit")}</>}
+                </Button>
+              </div>
+            </>
+          ) : (
+            <>
+              <Input
+                value={decision}
+                onChange={(e) => setDecision(e.target.value)}
+                placeholder={t("run.placeholder")}
+                disabled={pending}
+              />
+              <Button
+                type="submit"
+                disabled={pending || !decision.trim()}
+                className="bg-gradient-primary text-primary-foreground shadow-glow"
+              >
+                {pending ? <Loader2 className="size-4 animate-spin" /> : <><Send className="size-4" /> {t("run.submit")}</>}
+              </Button>
+            </>
+          )}
         </form>
         {lastReaction && (
           <div className="mt-5 rounded-lg border border-primary/20 bg-primary/5 p-4 animate-fade-in">
