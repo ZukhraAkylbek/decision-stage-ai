@@ -395,6 +395,10 @@ function Running({ scenario, onComplete }: { scenario: Scenario; onComplete: () 
           setSelectedResource={setSelectedResource}
           submit={submit}
           viewToggle={viewToggle}
+          isExam={isExam}
+          examExternalLink={externalLink}
+          setExamExternalLink={setExternalLink}
+          timerChip={timerChip}
         />
       </AppShell>
     );
