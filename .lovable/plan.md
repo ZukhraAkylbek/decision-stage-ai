@@ -1,138 +1,68 @@
-# Office Mode — Visual Redesign Proposal
+# ProductPush Simulator V2 — Architecture Rollout Plan
 
-Scope: visual/UX only for `/simulations/$id`. No changes to scenarios, scoring, server functions, routes, i18n, auth, or progress. Classic Mode stays byte-identical; Office Mode is a new presentational shell over the same state and actions.
+This is a large, multi-phase rebuild. I'll ship it in 4 incremental PRs so each phase is reviewable and the app keeps working between steps. Lovable Cloud needs to be enabled (for DB + AI generator persistence) — I'll do that in Phase 2.
 
----
+## Phase A — Simulation Core + Theme Engine (no UI redesign)
 
-## 1. View Mode Selector
+**New module: `src/lib/simulation/`**
+- `types.ts` — canonical typed blocks:
+  - `Industry` (id, name, terminologyMap, defaultKpis[], stakeholderArchetypes[], resourceArchetypes[], themeId)
+  - `Company` (id, industryId, name, employees, products[], businessModel, description)
+  - `Scenario` (id, companyId, title, objective, difficulty, successCriteria[], failureCriteria[], evaluatedSkills[])
+  - `SimulationEvent` (id, trigger: 'auto'|'decision'|'progress', condition, payload: ScenarioMessage|MetricDelta|Update)
+  - `Resource` (id, kind, title, payload)
+  - `EvaluationRubric` (skill → weight, rules)
+  - `SimulationDefinition` — the assembled object `{industry, company, scenario, events[], resources[], messages[], evaluation}`
+- `registry.ts` — in-memory registry of industries/companies/scenarios; seeded with current 11 scenarios mapped into the new shape.
+- `assembler.ts` — `assembleSimulation(scenarioId): SimulationDefinition` that hydrates a scenario with its company + industry defaults.
+- `adapter.ts` — converts a `SimulationDefinition` back into the legacy `Scenario` shape consumed by `simulations.$id.index.tsx` and `OfficeView`, so nothing breaks during the transition.
 
-Location: top-right of the simulation runner, next to the Timer / "End simulation" button.
+**Theme Engine: `src/lib/theme-engine/`**
+- `themes.ts` — `IndustryTheme` definitions (telecom, banking, construction, manufacturing, retail, logistics, it_startup, healthcare, education, government, custom) with: colorTokens, officeBgKey, deskPropsKeys[], terminology, resourceIcons.
+- `ThemeProvider.tsx` — React context that exposes the active theme; injects CSS vars (`--theme-primary`, `--theme-accent`, etc.) on a wrapper div so every component (Office, Classic, Sidebar accents) reads the same tokens.
+- `OfficeView` and `simulations.$id.index.tsx` consume theme via `useIndustryTheme()` — no per-industry forks.
 
-```text
-[ Classic | Office ]   ⏱ 24:35   [ End ]
-```
+**Existing `src/lib/scenarios.ts`** is kept as a thin re-export that calls the adapter, so all existing routes keep compiling.
 
-- Stored in `localStorage` key `pp:viewMode` (default = `office`).
-- Toggle re-renders the runner; underlying state (step, history, metrics, pending) is preserved via lifted state in `SimulationRunner`.
-- Briefing and Results pages: unchanged.
+## Phase B — Lovable Cloud + Persistence
 
----
+- Enable Lovable Cloud.
+- Migration creates tables: `industries`, `companies`, `scenarios`, `scenario_events`, `scenario_resources`, `scenario_messages`, `simulation_runs`, `user_roles` (+ `app_role` enum + `has_role` SECURITY DEFINER).
+- Standard GRANTs + RLS (public read for published scenarios; admin write via `has_role(auth.uid(),'admin')`).
+- Seed migration inserts the 11 existing scenarios via the new schema.
+- Server functions in `src/lib/simulation.functions.ts`: `listScenarios`, `getScenario`, `createScenario`, `updateScenario`, `publishScenario`.
 
-## 2. Office Layout Wireframe (desktop, ≥1100px)
+## Phase C — AI Scenario + Company Generators
 
-```text
-┌──────────────────────────────────────────────────────────────────────┐
-│  ← Back    Office · PM Simulation · Step 3/6        [Classic|Office] │
-│                                              🕘 Mon 09:15 · Week 2   │
-├──────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   ╔══════════════════ WHITEBOARD (always visible) ════════════════╗  │
-│   ║  SCENARIO        │  COMPANY GOAL                              ║  │
-│   ║  W2 retention…   │  Restore W2 retention > 35%                ║  │
-│   ║ ─────────────────┴──────────────────────────────────────────  ║  │
-│   ║  KEY METRICS  [W2 22% ▼] [D1 54% ▼] [Sess 3.1 ▬] [Crash 1.8%▲]║  │
-│   ║ ─────────────────────────────────────────────────────────────  ║  │
-│   ║  LATEST EVENTS                                                 ║  │
-│   ║  09:14  Release v4.2 shipped                                   ║  │
-│   ║  09:08  Support: spike in NPS complaints                       ║  │
-│   ╚════════════════════════════════════════════════════════════════╝  │
-│                                                                      │
-│   ┌──────────────── DESK SURFACE (wood/matte plane) ──────────────┐  │
-│   │  ╭──────────╮     ╭──────────────────────╮     ╭──────────╮   │  │
-│   │  │ 📄 DOCS  │     │   💻 MACBOOK         │     │ 📞 PHONE │   │  │
-│   │  │ stack    │     │   (active panel)     │     │ msgs •3  │   │  │
-│   │  ╰──────────╯     ╰──────────────────────╯     ╰──────────╯   │  │
-│   └────────────────────────────────────────────────────────────────┘  │
-│                                                                      │
-│   ┌──────────────── ACTIVE WORKSPACE (MacBook screen) ────────────┐  │
-│   │  Your decision · step 3/6                                     │  │
-│   │  [suggested action chips]                                     │  │
-│   │  [ free text input ............................. ] [ Send ]  │  │
-│   │  Last reaction: …                                             │  │
-│   └────────────────────────────────────────────────────────────────┘  │
-│                                                                      │
-│   Timeline:  ● ● ● ◯ ◯ ◯                                             │
-└──────────────────────────────────────────────────────────────────────┘
-```
+- `src/lib/ai/generate-scenario.functions.ts` — `createServerFn` (admin-gated) that takes `{title, industryId, difficulty, description}` and uses Lovable AI Gateway (`google/gemini-3-flash-preview`) with `Output.object` schema matching `SimulationDefinition` to produce: scenario body, stakeholders, messages, events timeline, resources, evaluation rubric, 3 solution paths.
+- `src/lib/ai/generate-company.functions.ts` — same pattern, prompt → `Company` object.
+- Both return drafts (`status: 'draft'`) so admin can edit before publishing.
+- Uses existing `src/lib/ai-gateway.server.ts` helper.
 
-Desk objects are **navigation buttons**. Clicking one swaps the "Active Workspace" panel below:
+## Phase D — Admin Panel
 
-| Object | Active Workspace shows |
-|---|---|
-| 💻 MacBook (default) | Decision input + suggested actions + last reaction |
-| 📄 Docs | Resources list + selected resource detail (current right-column block) |
-| 📞 Phone | Messages feed (current right-column block) |
-| 🧑‍🏫 Whiteboard | Always rendered above — also clickable to expand metrics/updates full-width |
+- Route layout `src/routes/admin/` gated by `_authenticated` + `has_role('admin')`.
+- Pages: Dashboard, Industries, Themes, Companies, Scenarios (list + editor), Events, Resources, Users, Reports, AI Generator.
+- AI Generator page: form → calls generator server fn → renders editable preview of the generated `SimulationDefinition` → Save Draft / Publish buttons.
+- Scenario editor: block-based form mirroring the type shape (objectives, events timeline, resources, messages, rubric weights).
 
-This keeps every piece of information that exists today, just rearranged into an office metaphor. Nothing is removed.
+## Phase E (deferred per request) — Office Mode visual polish
 
-### Responsive strategy
-
-- **≥1280px**: layout as above. Whiteboard ~ 1100px wide, desk row centered under it.
-- **1024–1279px**: whiteboard full width; desk objects shrink to icon+label pills; active workspace below.
-- **<1024px (tablet/mobile)**: desk row collapses to a horizontal segmented control (Computer / Docs / Phone). Whiteboard stacks above. No 3D illusion — flat cards. Office Mode remains usable but visually simplified.
+Skipped intentionally until A–D land.
 
 ---
 
-## 3. Office Clock
+## Technical notes
 
-Small chip in the top bar:
-
-```text
-🕘 Mon · 09:15 AM · Week 2
-```
-
-- Pure presentation, driven by `step` and scenario.
-- Advances by ~25 in-fiction minutes per submitted decision (`base 09:00 + step * 25min`). Day/week derived from step ranges. No real timer — does not affect scoring.
+- The adapter pattern in Phase A is the key to not breaking the current UI: existing components keep importing `getScenario(id)` and receive the same shape.
+- All AI calls go through the Lovable AI Gateway server-side; `LOVABLE_API_KEY` never touches the client.
+- Schema for `Output.object` will be kept flat (no deep enums) to stay within Gemini's constrained-decoding limit; long lists (industries) are passed in the prompt, validated in code.
+- Role storage uses the mandated `user_roles` table + `has_role` SECURITY DEFINER pattern — never on profiles.
 
 ---
 
-## 4. Visual Style
+## What I need from you before I start coding
 
-- **Palette**: reuse existing tokens (`--background`, `--card`, `--primary`, gradients in `styles.css`). Add 3 new tokens for office surfaces:
-  - `--office-floor` (soft warm gray)
-  - `--office-desk` (matte oak via `oklch`)
-  - `--office-glass` (translucent meeting-room glass, low-alpha primary)
-- **Background**: lightweight CSS illustration — a single SVG layer with glass meeting rooms (rounded rectangles, soft inner shadow), desk plane, soft daylight gradient from top-left. No raster art, no stock photos, no neon.
-- **Objects**: flat illustrated SVGs (MacBook, document stack, phone) styled with the same color tokens. ~120–160px wide, subtle drop shadow, hover lift (`translate-y-[-2px]`).
-- **Typography & spacing**: unchanged — keep the current Inter/system stack and shadcn rhythm. Premium/Linear/Notion restraint.
-
----
-
-## 5. Component Hierarchy (new files only)
-
-```text
-src/components/office/
-  OfficeRunner.tsx          ← top-level Office Mode shell (replaces Running's JSX, reuses its state)
-  OfficeBackground.tsx      ← SVG room (glass walls, daylight, plants)
-  Whiteboard.tsx            ← scenario + goal + metrics + events panel
-  Desk.tsx                  ← desk plane + positions the 3 objects
-  DeskObject.tsx            ← reusable button (icon SVG, label, badge, active state)
-  ActiveWorkspace.tsx       ← swaps Computer/Docs/Phone panel content
-  OfficeClock.tsx           ← Mon · 09:15 · Week N chip
-  ViewModeToggle.tsx        ← Classic | Office segmented control
-  illustrations/
-    Macbook.tsx
-    DocsStack.tsx
-    DeskPhone.tsx
-    GlassRoom.tsx
-```
-
-Refactor in `src/routes/simulations.$id.index.tsx`:
-- Extract the current `Running` body into `ClassicRunner` (zero visual change).
-- New `OfficeRunner` consumes the **same** `submit`, `step`, `history`, `metrics`, `updates`, `messages`, `suggested`, `lastReaction`, `selectedResource` state.
-- `SimulationRunner` reads `viewMode` from localStorage and renders one or the other.
-
-No changes to: `simulation.functions.ts`, `scenarios.ts`, `i18n.tsx`, `AppShell`, `AppSidebar`, routes, results, progress.
-
----
-
-## 6. Deliverable order
-
-1. This proposal (now).
-2. After approval: implement files above + the toggle. Classic Mode untouched.
-3. Visual QA in preview at desktop + tablet widths.
-
----
-
-Approve this plan and I'll build it. If you want different desk objects, a darker office, or the clock to advance differently, tell me before I start.
+1. **Scope confirmation** — should I ship all of Phase A in this turn (no Cloud, no AI yet, just the typed core + theme engine + adapter so nothing breaks), and then Phase B–D in follow-up turns? Or do you want a different slice first?
+2. **Auth** — Phase B onward needs login (so admins can be gated). OK to add email/password auth when we turn on Lovable Cloud?
+3. **Industries list** — the 11 above is my default. Want me to drop/add any before I seed?
