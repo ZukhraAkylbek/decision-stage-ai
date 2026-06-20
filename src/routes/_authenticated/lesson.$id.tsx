@@ -1,0 +1,561 @@
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useEffect, useMemo, useState } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { getLesson, STEP_LABELS_RU, type Task } from "@/lib/course";
+import { gradeWritten, type GradeResult } from "@/lib/course/grading.functions";
+import { upsertProgress, recordAttempt } from "@/lib/course/progress.functions";
+import { CallPanel } from "@/components/course/CallPanel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CheckCircle2,
+  XCircle,
+  Lightbulb,
+  Loader2,
+  BookOpen,
+  Sparkles,
+} from "lucide-react";
+
+export const Route = createFileRoute("/_authenticated/lesson/$id")({
+  component: LessonRunner,
+});
+
+type AttemptStatus = "solved_self" | "solved_with_help" | "failed";
+
+function LessonRunner() {
+  const { id } = Route.useParams();
+  const navigate = useNavigate();
+  const lesson = getLesson(id);
+  const saveProgress = useServerFn(upsertProgress);
+  const logAttempt = useServerFn(recordAttempt);
+
+  const [step, setStep] = useState(0);
+  const [outcomes, setOutcomes] = useState<Record<number, AttemptStatus>>({});
+
+  const totalSteps = lesson ? lesson.tasks.length + 2 : 0;
+
+  useEffect(() => {
+    if (!lesson) return;
+    void saveProgress({
+      data: { lessonId: lesson.id, currentStep: step, status: step >= totalSteps - 1 ? "completed" : "in_progress" },
+    }).catch(() => {});
+  }, [step, lesson, saveProgress, totalSteps]);
+
+  if (!lesson) {
+    return (
+      <div className="min-h-screen grid place-items-center">
+        <div className="text-center">
+          <p>Урок не найден.</p>
+          <Link to="/course" className="text-primary hover:underline">К списку уроков</Link>
+        </div>
+      </div>
+    );
+  }
+
+  const isTheory = step === 0;
+  const isSummary = step === totalSteps - 1;
+  const taskIndex = step - 1;
+  const task = !isTheory && !isSummary ? lesson.tasks[taskIndex] : undefined;
+
+  function completeTask(status: AttemptStatus) {
+    setOutcomes((o) => ({ ...o, [taskIndex]: status }));
+    if (task) {
+      void logAttempt({
+        data: {
+          lessonId: lesson!.id,
+          taskType: task.type,
+          attemptNo: 1,
+          status,
+        },
+      }).catch(() => {});
+    }
+    setStep((s) => s + 1);
+  }
+
+  const stepLabel = isTheory
+    ? STEP_LABELS_RU.theory
+    : isSummary
+      ? STEP_LABELS_RU.summary
+      : STEP_LABELS_RU[task!.type];
+
+  return (
+    <div className="min-h-screen bg-gradient-subtle">
+      <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
+          <Link to="/course" className="text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="size-5" />
+          </Link>
+          <div className="min-w-0 flex-1">
+            <div className="text-[11px] uppercase tracking-wider text-muted-foreground">
+              Урок {lesson.number} · {stepLabel}
+            </div>
+            <div className="font-semibold text-sm truncate">{lesson.title}</div>
+          </div>
+        </div>
+        {/* 5-step progress within lesson (tasks only) */}
+        <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-1.5">
+          {lesson.tasks.map((t, i) => {
+            const oc = outcomes[i];
+            const active = taskIndex === i;
+            return (
+              <div key={i} className="flex-1">
+                <div
+                  className={cn(
+                    "h-1.5 rounded-full transition-colors",
+                    oc === "solved_self" && "bg-emerald-500",
+                    oc === "solved_with_help" && "bg-amber-400",
+                    oc === "failed" && "bg-destructive",
+                    !oc && active && "bg-primary",
+                    !oc && !active && "bg-secondary",
+                  )}
+                />
+                <div className="mt-1 text-[9px] text-center text-muted-foreground uppercase tracking-wide">
+                  {STEP_LABELS_RU[t.type]}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </header>
+
+      <main className="max-w-3xl mx-auto px-4 py-6">
+        {isTheory && (
+          <TheoryStep lesson={lesson} onNext={() => setStep(1)} />
+        )}
+        {task && (
+          <TaskStep
+            key={taskIndex}
+            task={task}
+            onComplete={completeTask}
+          />
+        )}
+        {isSummary && (
+          <SummaryStep lesson={lesson} outcomes={outcomes} onBackToTheory={() => setStep(0)} onFinish={() => navigate({ to: "/course" })} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+/* ---------------- Theory ---------------- */
+function TheoryStep({ lesson, onNext }: { lesson: ReturnType<typeof getLesson> & {}; onNext: () => void }) {
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card animate-in fade-in">
+      <div className="flex items-center gap-2 text-primary">
+        <BookOpen className="size-5" />
+        <span className="text-xs font-semibold uppercase tracking-wider">Теория</span>
+      </div>
+      <h2 className="mt-3 text-xl font-bold">{lesson.title}</h2>
+      <p className="mt-3 leading-relaxed text-[15px]">{lesson.theory}</p>
+      {lesson.keyTerms.length > 0 && (
+        <div className="mt-4">
+          <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Ключевые термины</div>
+          <div className="flex flex-wrap gap-2">
+            {lesson.keyTerms.map((term) => (
+              <span key={term} className="rounded-full bg-secondary px-3 py-1 text-sm">{term}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      <Button className="mt-6 w-full" onClick={onNext}>
+        Начать задания <ArrowRight className="size-4" />
+      </Button>
+    </div>
+  );
+}
+
+/* ---------------- Task dispatcher ---------------- */
+function TaskStep({ task, onComplete }: { task: Task; onComplete: (s: AttemptStatus) => void }) {
+  switch (task.type) {
+    case "quiz":
+      return <QuizStep task={task} onComplete={onComplete} />;
+    case "calculation":
+      return <CalcStep task={task} onComplete={onComplete} />;
+    case "case_choice":
+      return <CaseStep task={task} onComplete={onComplete} />;
+    case "written":
+      return <WrittenStep task={task} onComplete={onComplete} />;
+    case "call":
+      return (
+        <div className="rounded-2xl border bg-card shadow-card overflow-hidden h-[70vh] flex flex-col">
+          <CallPanel task={task} onComplete={(s, _a) => onComplete(s)} />
+        </div>
+      );
+  }
+}
+
+function HintBox({ level, text }: { level: number; text: string }) {
+  return (
+    <div className="rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm mt-3">
+      <div className="font-medium text-amber-700 dark:text-amber-400 inline-flex items-center gap-1.5">
+        <Lightbulb className="size-4" /> Подсказка {level}
+      </div>
+      <p className="mt-1">{text}</p>
+    </div>
+  );
+}
+
+/* ---------------- Quiz ---------------- */
+function QuizStep({ task, onComplete }: { task: Extract<Task, { type: "quiz" }>; onComplete: (s: AttemptStatus) => void }) {
+  const [qi, setQi] = useState(0);
+  const [selected, setSelected] = useState<number | null>(null);
+  const [attempts, setAttempts] = useState(0);
+  const [usedHelp, setUsedHelp] = useState(false);
+  const [reveal, setReveal] = useState(false);
+
+  const q = task.questions[qi];
+  const correct = selected === q.correctIndex;
+
+  function check() {
+    if (selected === null) return;
+    if (selected === q.correctIndex) {
+      next(attempts > 0);
+    } else {
+      const n = attempts + 1;
+      setAttempts(n);
+      setUsedHelp(true);
+      if (n >= 2) setReveal(true);
+    }
+  }
+
+  function next(withHelp: boolean) {
+    if (qi + 1 < task.questions.length) {
+      setQi(qi + 1);
+      setSelected(null);
+      setAttempts(0);
+      setReveal(false);
+      if (withHelp) setUsedHelp(true);
+    } else {
+      onComplete(usedHelp || withHelp ? "solved_with_help" : "solved_self");
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card">
+      <div className="text-xs text-muted-foreground mb-2">Вопрос {qi + 1} из {task.questions.length}</div>
+      <h3 className="font-semibold text-lg">{q.question}</h3>
+      <div className="mt-4 space-y-2">
+        {q.options.map((opt, i) => {
+          const isSel = selected === i;
+          const showCorrect = (reveal || (selected !== null && correct)) && i === q.correctIndex;
+          const showWrong = isSel && selected !== q.correctIndex && attempts > 0;
+          return (
+            <button
+              key={i}
+              type="button"
+              disabled={reveal}
+              onClick={() => setSelected(i)}
+              className={cn(
+                "w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors",
+                isSel && !showWrong && "border-primary bg-primary/5",
+                showCorrect && "border-emerald-500 bg-emerald-500/10",
+                showWrong && "border-destructive bg-destructive/10",
+                !isSel && !showCorrect && "hover:bg-secondary",
+              )}
+            >
+              {opt}
+              {showCorrect && <CheckCircle2 className="inline size-4 ml-2 text-emerald-600" />}
+              {showWrong && <XCircle className="inline size-4 ml-2 text-destructive" />}
+            </button>
+          );
+        })}
+      </div>
+
+      {attempts === 1 && !reveal && <HintBox level={1} text={task.hint1} />}
+      {attempts >= 2 && !reveal && <HintBox level={2} text={task.hint2} />}
+      {reveal && (
+        <div className="mt-3 rounded-lg bg-secondary/60 p-3 text-sm">
+          Правильный ответ выделен зелёным. Запомни и двигайся дальше.
+        </div>
+      )}
+
+      <div className="mt-5">
+        {reveal ? (
+          <Button className="w-full" onClick={() => next(true)}>Дальше</Button>
+        ) : (
+          <Button className="w-full" onClick={check} disabled={selected === null}>Проверить</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Calculation ---------------- */
+function CalcStep({ task, onComplete }: { task: Extract<Task, { type: "calculation" }>; onComplete: (s: AttemptStatus) => void }) {
+  const [value, setValue] = useState("");
+  const [attempts, setAttempts] = useState(0);
+  const [reveal, setReveal] = useState(false);
+
+  function judge(): boolean {
+    const raw = value.trim().toLowerCase();
+    if (!raw) return false;
+    if (task.numericAnswer !== undefined) {
+      const num = parseFloat(raw.replace(/[^0-9.,-]/g, "").replace(",", "."));
+      if (!Number.isNaN(num) && Math.abs(num - task.numericAnswer) <= (task.tolerance ?? 0)) {
+        if (task.keywords && task.keywords.length) {
+          return task.keywords.some((k) => raw.includes(k.toLowerCase()));
+        }
+        return true;
+      }
+      return false;
+    }
+    if (task.keywords) return task.keywords.some((k) => raw.includes(k.toLowerCase()));
+    return false;
+  }
+
+  function check() {
+    if (judge()) {
+      onComplete(attempts > 0 ? "solved_with_help" : "solved_self");
+    } else {
+      const n = attempts + 1;
+      setAttempts(n);
+      if (n >= 2) setReveal(true);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card">
+      <div className="flex items-center gap-2 text-primary">
+        <Sparkles className="size-5" />
+        <span className="text-xs font-semibold uppercase tracking-wider">Расчётная задача</span>
+      </div>
+      <h3 className="mt-3 font-semibold">{task.prompt}</h3>
+      {task.given && <div className="mt-3 rounded-lg bg-secondary/60 p-3 text-sm">{task.given}</div>}
+
+      <Input
+        className="mt-4"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder="Твой ответ (число или вывод)"
+        disabled={reveal}
+      />
+
+      {attempts === 1 && !reveal && <HintBox level={1} text={task.hint1} />}
+      {attempts >= 2 && !reveal && <HintBox level={2} text={task.hint2} />}
+      {reveal && (
+        <div className="mt-3 rounded-lg border bg-secondary/60 p-3 text-sm">
+          <div className="font-semibold">Решение</div>
+          <p className="mt-1">{task.explanation}</p>
+        </div>
+      )}
+
+      <div className="mt-5">
+        {reveal ? (
+          <Button className="w-full" onClick={() => onComplete("solved_with_help")}>Дальше</Button>
+        ) : (
+          <Button className="w-full" onClick={check} disabled={!value.trim()}>Проверить</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Case (categorization) ---------------- */
+function CaseStep({ task, onComplete }: { task: Extract<Task, { type: "case_choice" }>; onComplete: (s: AttemptStatus) => void }) {
+  const [assign, setAssign] = useState<Record<number, string>>({});
+  const [attempts, setAttempts] = useState(0);
+  const [reveal, setReveal] = useState(false);
+
+  const allAssigned = task.items.every((_, i) => assign[i]);
+  const allCorrect = task.items.every((it, i) => assign[i] === it.correct);
+
+  function check() {
+    if (!allAssigned) return;
+    if (allCorrect) {
+      onComplete(attempts > 0 ? "solved_with_help" : "solved_self");
+    } else {
+      const n = attempts + 1;
+      setAttempts(n);
+      if (n >= 2) setReveal(true);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card">
+      <span className="text-xs font-semibold uppercase tracking-wider text-primary">Кейс с выбором</span>
+      <h3 className="mt-2 font-semibold">{task.prompt}</h3>
+      <div className="mt-4 space-y-3">
+        {task.items.map((it, i) => {
+          const chosen = assign[i];
+          const wrong = attempts > 0 && chosen && chosen !== it.correct;
+          return (
+            <div key={i} className={cn("rounded-lg border p-3", wrong && "border-destructive")}>
+              <div className="text-sm">{it.text}</div>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {task.categories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    disabled={reveal}
+                    onClick={() => setAssign((a) => ({ ...a, [i]: cat }))}
+                    className={cn(
+                      "rounded-full px-3 py-1 text-xs border transition-colors",
+                      chosen === cat ? "bg-primary text-primary-foreground border-primary" : "hover:bg-secondary",
+                      reveal && cat === it.correct && "border-emerald-500 bg-emerald-500/10 text-foreground",
+                    )}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {attempts === 1 && !reveal && <HintBox level={1} text={task.hint1} />}
+      {attempts >= 2 && !reveal && <HintBox level={2} text={task.hint2} />}
+      {reveal && (
+        <div className="mt-3 rounded-lg border bg-secondary/60 p-3 text-sm">
+          <div className="font-semibold">Разбор</div>
+          <p className="mt-1">{task.explanation}</p>
+        </div>
+      )}
+
+      <div className="mt-5">
+        {reveal ? (
+          <Button className="w-full" onClick={() => onComplete("solved_with_help")}>Дальше</Button>
+        ) : (
+          <Button className="w-full" onClick={check} disabled={!allAssigned}>Проверить</Button>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Written ---------------- */
+function WrittenStep({ task, onComplete }: { task: Extract<Task, { type: "written" }>; onComplete: (s: AttemptStatus) => void }) {
+  const grade = useServerFn(gradeWritten);
+  const [answer, setAnswer] = useState("");
+  const [revisions, setRevisions] = useState(0);
+  const [result, setResult] = useState<GradeResult | null>(null);
+  const [loading, setLoading] = useState(false);
+  const forceReveal = revisions > 3;
+
+  async function submit() {
+    if (!answer.trim()) return;
+    setLoading(true);
+    try {
+      const res = (await grade({ data: { prompt: task.prompt, criteria: task.criteria, answer } })) as GradeResult;
+      setResult(res);
+      if (res.passed) {
+        onComplete(revisions > 0 ? "solved_with_help" : "solved_self");
+      } else {
+        setRevisions((r) => r + 1);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card">
+      <span className="text-xs font-semibold uppercase tracking-wider text-primary">Письменное задание</span>
+      <h3 className="mt-2 font-semibold">{task.prompt}</h3>
+      <div className="mt-3 rounded-lg bg-secondary/40 p-3">
+        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">Критерии</div>
+        <ul className="space-y-1 text-sm">
+          {task.criteria.map((c) => {
+            const met = result?.metCriteria.includes(c);
+            const unmet = result?.unmetCriteria.includes(c);
+            return (
+              <li key={c} className="flex items-start gap-2">
+                {met ? <CheckCircle2 className="size-4 text-emerald-600 mt-0.5 shrink-0" /> : unmet ? <XCircle className="size-4 text-destructive mt-0.5 shrink-0" /> : <span className="size-4 rounded-full border mt-0.5 shrink-0" />}
+                <span>{c}</span>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+
+      <Textarea
+        className="mt-4 min-h-[140px]"
+        value={answer}
+        onChange={(e) => setAnswer(e.target.value)}
+        placeholder="Напиши развёрнутый ответ…"
+        disabled={forceReveal}
+      />
+
+      {result && !result.passed && !forceReveal && (
+        <div className="mt-3 rounded-lg border border-amber-300/50 bg-amber-50 dark:bg-amber-950/30 p-3 text-sm">
+          <div className="font-medium text-amber-700 dark:text-amber-400 inline-flex items-center gap-1.5">
+            <Lightbulb className="size-4" /> Что доработать
+          </div>
+          <p className="mt-1">{result.guidingQuestion || result.feedback}</p>
+        </div>
+      )}
+
+      {forceReveal && (
+        <div className="mt-3 rounded-lg border bg-secondary/60 p-3 text-sm">
+          <div className="font-semibold">Эталонный ответ</div>
+          <p className="mt-1 text-muted-foreground whitespace-pre-line">{task.referenceAnswer}</p>
+          <Button className="mt-3 w-full" onClick={() => onComplete("solved_with_help")}>Понятно, дальше</Button>
+        </div>
+      )}
+
+      {!forceReveal && (
+        <Button className="mt-5 w-full" onClick={submit} disabled={loading || !answer.trim()}>
+          {loading && <Loader2 className="size-4 animate-spin" />} Отправить на проверку
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/* ---------------- Summary ---------------- */
+function SummaryStep({
+  lesson,
+  outcomes,
+  onBackToTheory,
+  onFinish,
+}: {
+  lesson: NonNullable<ReturnType<typeof getLesson>>;
+  outcomes: Record<number, AttemptStatus>;
+  onBackToTheory: () => void;
+  onFinish: () => void;
+}) {
+  const stats = useMemo(() => {
+    const vals = Object.values(outcomes);
+    const self = vals.filter((v) => v === "solved_self").length;
+    const help = vals.filter((v) => v === "solved_with_help").length;
+    const total = lesson.tasks.length;
+    const score = Math.round(((self * 100 + help * 60) / Math.max(1, total)) || 0);
+    return { self, help, total, score };
+  }, [outcomes, lesson]);
+
+  return (
+    <div className="rounded-2xl border bg-card p-6 shadow-card text-center">
+      <div className="size-14 mx-auto rounded-full bg-gradient-primary grid place-items-center shadow-glow">
+        <CheckCircle2 className="size-7 text-white" />
+      </div>
+      <h2 className="mt-4 text-xl font-bold">Урок пройден!</h2>
+      <p className="text-muted-foreground mt-1">{lesson.title}</p>
+
+      <div className="mt-5 grid grid-cols-3 gap-3">
+        <div className="rounded-xl bg-secondary/60 p-3">
+          <div className="text-2xl font-bold text-emerald-600">{stats.self}</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">самостоятельно</div>
+        </div>
+        <div className="rounded-xl bg-secondary/60 p-3">
+          <div className="text-2xl font-bold text-amber-500">{stats.help}</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">с подсказками</div>
+        </div>
+        <div className="rounded-xl bg-secondary/60 p-3">
+          <div className="text-2xl font-bold text-primary">{stats.score}</div>
+          <div className="text-[11px] text-muted-foreground uppercase tracking-wide">баллов</div>
+        </div>
+      </div>
+
+      <div className="mt-6 flex flex-col gap-2">
+        <Button onClick={onFinish}>К списку уроков</Button>
+        <Button variant="outline" onClick={onBackToTheory}>
+          <BookOpen className="size-4" /> Повторить теорию
+        </Button>
+      </div>
+    </div>
+  );
+}
