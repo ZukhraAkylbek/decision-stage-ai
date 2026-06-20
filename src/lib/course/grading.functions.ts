@@ -144,8 +144,9 @@ function fallbackCallReply(data: z.infer<typeof CallInput>): CallReply {
   const shouldReveal = [...revealWords, ...intentWords].some((word) => text.includes(word));
 
   if (shouldReveal) {
+    const detail = data.hiddenInfo.replace(/[.!?…]+$/u, "");
     return {
-      reply: `Да, важная деталь: ${data.hiddenInfo}. Я бы отталкивался именно от этого, прежде чем обещать срок или решение.`,
+      reply: `Да, важная деталь: ${detail}. Я бы отталкивался именно от этого, прежде чем обещать срок или решение.`,
       revealed: true,
     };
   }
