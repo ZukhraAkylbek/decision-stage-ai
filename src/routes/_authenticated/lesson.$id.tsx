@@ -206,7 +206,7 @@ function HintBox({ level, text }: { level: number; text: string }) {
 }
 
 /* ---------------- Quiz ---------------- */
-function QuizStep({ task, onComplete }: { task: Extract<Task, { type: "quiz" }>; onComplete: (s: AttemptStatus) => void }) {
+function QuizStep({ lessonId, task, onComplete }: { lessonId: string; task: Extract<Task, { type: "quiz" }>; onComplete: (s: AttemptStatus) => void }) {
   const [qi, setQi] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [attempts, setAttempts] = useState(0);
