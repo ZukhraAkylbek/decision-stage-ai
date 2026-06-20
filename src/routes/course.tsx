@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { supabase } from "@/integrations/supabase/client";
-import { LESSONS, lessonStepCount } from "@/lib/course";
+import { LESSONS, lessonStepCount, lessonSlug } from "@/lib/course";
 import { practiceAfterLesson } from "@/lib/course/practice";
 import { getMyProgress } from "@/lib/course/progress.functions";
 import { Button } from "@/components/ui/button";
@@ -136,8 +136,8 @@ function CoursePage() {
                       {started ? `Шаг ${(p?.current_step ?? 0) + 1}/${totalSteps}` : `${totalSteps} шагов`}
                     </span>
                     <Link
-                      to="/lesson/$id"
-                      params={{ id: lesson.id }}
+                      to="/lessons/$slug"
+                      params={{ slug: lessonSlug(lesson) }}
                       className="text-xs font-medium text-primary inline-flex items-center gap-1 hover:underline"
                     >
                       <PlayCircle className="size-4" />
