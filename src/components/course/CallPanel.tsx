@@ -81,7 +81,7 @@ export function CallPanel({
   onComplete,
 }: {
   task: CallTask;
-  onComplete: (status: "solved_self" | "solved_with_help", answer: string) => void;
+  onComplete: (status: "solved_self" | "solved_with_help", answer: string, score?: number) => void;
 }) {
   const reply = useServerFn(callReply);
   const grade = useServerFn(gradeCallAnswer);
