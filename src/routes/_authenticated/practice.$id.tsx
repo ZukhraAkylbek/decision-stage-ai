@@ -181,7 +181,7 @@ function Phone({
 }) {
   const pending = practice.tasks.filter((_, i) => !outcomes[i]).length;
   return (
-    <div className="hidden lg:block animate-in fade-in slide-in-from-right-4 duration-500">
+    <div className="w-full lg:w-[300px] shrink-0 animate-in fade-in slide-in-from-right-4 duration-500">
       <div className="mx-auto w-[280px] rounded-[2rem] border-[6px] border-black/70 bg-[oklch(0.13_0.02_255)] shadow-2xl overflow-hidden">
         {/* status bar */}
         <div className="relative bg-black/50 px-5 pt-2.5 pb-2 flex items-center justify-between text-[10px] text-white/70">
