@@ -63,8 +63,10 @@ function LessonRunner() {
   const taskIndex = step - 1;
   const task = !isTheory && !isSummary ? lesson.tasks[taskIndex] : undefined;
 
-  function completeTask(status: AttemptStatus) {
+  function completeTask(status: AttemptStatus, score?: number) {
+    const fallbackScore = status === "solved_self" ? 100 : status === "solved_with_help" ? 65 : 30;
     setOutcomes((o) => ({ ...o, [taskIndex]: status }));
+    setScores((s) => ({ ...s, [taskIndex]: score ?? fallbackScore }));
     if (task) {
       void logAttempt({
         data: {
