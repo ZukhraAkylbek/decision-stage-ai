@@ -312,7 +312,7 @@ function QuizStep({ lessonId, task, onComplete }: { lessonId: string; task: Extr
 }
 
 /* ---------------- Calculation ---------------- */
-function CalcStep({ task, onComplete }: { task: Extract<Task, { type: "calculation" }>; onComplete: (s: AttemptStatus) => void }) {
+function CalcStep({ lessonId, task, onComplete }: { lessonId: string; task: Extract<Task, { type: "calculation" }>; onComplete: (s: AttemptStatus) => void }) {
   const [value, setValue] = useState("");
   const [attempts, setAttempts] = useState(0);
   const [reveal, setReveal] = useState(false);
