@@ -155,13 +155,10 @@ export function AdminOverview() {
               }}
             />
             <Legend wrapperStyle={{ fontSize: 11 }} />
-            <Bar dataKey="Сам" stackId="a" fill="#10b981" radius={[0, 0, 0, 0]} />
+            <Bar dataKey="Сам" stackId="a" fill="#10b981" />
             <Bar dataKey="С подсказкой" stackId="a" fill="#f59e0b" />
-            <Bar dataKey="Провал" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]}>
-              {data.taskTypeBreakdown.map((_, i) => (
-                <Cell key={i} fill="#ef4444" stroke="none" opacity={STATUS_COLORS.length ? 1 : 1} />
-              ))}
-            </Bar>
+            <Bar dataKey="Провал" stackId="a" fill="#ef4444" radius={[4, 4, 0, 0]} />
+
           </BarChart>
         </ResponsiveContainer>
       </Card>
