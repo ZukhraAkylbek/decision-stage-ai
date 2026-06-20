@@ -36,6 +36,7 @@ function LessonRunner() {
 
   const [step, setStep] = useState(0);
   const [outcomes, setOutcomes] = useState<Record<number, AttemptStatus>>({});
+  const [scores, setScores] = useState<Record<number, number>>({});
 
   const totalSteps = lesson ? lesson.tasks.length + 2 : 0;
 
