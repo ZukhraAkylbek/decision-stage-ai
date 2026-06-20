@@ -99,15 +99,16 @@ function AuthPage() {
               </div>
             )}
             <div className="space-y-1.5">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{mode === "signin" ? "Email или логин" : "Email"}</Label>
               <Input
                 id="email"
-                type="email"
+                type={mode === "signin" ? "text" : "email"}
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                placeholder={mode === "signin" ? "you@example.com или admin000" : "you@example.com"}
               />
+
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="password">Пароль</Label>
