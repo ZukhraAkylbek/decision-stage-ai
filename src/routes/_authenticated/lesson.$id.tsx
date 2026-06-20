@@ -122,7 +122,7 @@ function LessonRunner() {
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6">
+      <main className={cn("mx-auto px-4 py-6", task?.type === "call" ? "max-w-6xl" : "max-w-3xl")}>
         {isTheory && (
           <TheoryStep lesson={lesson} onNext={() => setStep(1)} />
         )}
@@ -181,7 +181,7 @@ function TaskStep({ task, onComplete }: { task: Task; onComplete: (s: AttemptSta
       return <WrittenStep task={task} onComplete={onComplete} />;
     case "call":
       return (
-        <div className="rounded-2xl border bg-card shadow-card overflow-hidden h-[70vh] flex flex-col">
+        <div className="rounded-2xl border bg-card shadow-card overflow-hidden h-[78vh] min-h-[620px] flex flex-col">
           <CallPanel task={task} onComplete={(s, _a) => onComplete(s)} />
         </div>
       );
@@ -235,10 +235,17 @@ function QuizStep({ task, onComplete }: { task: Extract<Task, { type: "quiz" }>;
   }
 
   return (
-    <div className="rounded-2xl border bg-card p-6 shadow-card">
-      <div className="text-xs text-muted-foreground mb-2">Вопрос {qi + 1} из {task.questions.length}</div>
-      <h3 className="font-semibold text-lg">{q.question}</h3>
-      <div className="mt-4 space-y-2">
+    <div className="overflow-hidden rounded-2xl border bg-card shadow-card">
+      <div className="border-b bg-secondary/40 p-5">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-xs font-semibold uppercase tracking-wider text-primary">Ситуационный раунд</span>
+          <span className="rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow-card">
+            {qi + 1}/{task.questions.length}
+          </span>
+        </div>
+        <h3 className="mt-3 text-lg font-semibold">{q.question}</h3>
+      </div>
+      <div className="p-5 space-y-2">
         {q.options.map((opt, i) => {
           const isSel = selected === i;
           const showCorrect = (reveal || (selected !== null && correct)) && i === q.correctIndex;
@@ -250,20 +257,22 @@ function QuizStep({ task, onComplete }: { task: Extract<Task, { type: "quiz" }>;
               disabled={reveal}
               onClick={() => setSelected(i)}
               className={cn(
-                "w-full text-left rounded-lg border px-4 py-3 text-sm transition-colors",
+                "group flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors",
                 isSel && !showWrong && "border-primary bg-primary/5",
                 showCorrect && "border-emerald-500 bg-emerald-500/10",
                 showWrong && "border-destructive bg-destructive/10",
                 !isSel && !showCorrect && "hover:bg-secondary",
               )}
             >
-              {opt}
-              {showCorrect && <CheckCircle2 className="inline size-4 ml-2 text-emerald-600" />}
-              {showWrong && <XCircle className="inline size-4 ml-2 text-destructive" />}
+              <span className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-xs font-semibold group-hover:bg-card">
+                {String.fromCharCode(65 + i)}
+              </span>
+              <span className="flex-1">{opt}</span>
+              {showCorrect && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}
+              {showWrong && <XCircle className="size-4 shrink-0 text-destructive" />}
             </button>
           );
         })}
-      </div>
 
       {attempts === 1 && !reveal && <HintBox level={1} text={task.hint1} />}
       {attempts >= 2 && !reveal && <HintBox level={2} text={task.hint2} />}
@@ -279,6 +288,7 @@ function QuizStep({ task, onComplete }: { task: Extract<Task, { type: "quiz" }>;
         ) : (
           <Button className="w-full" onClick={check} disabled={selected === null}>Проверить</Button>
         )}
+      </div>
       </div>
     </div>
   );

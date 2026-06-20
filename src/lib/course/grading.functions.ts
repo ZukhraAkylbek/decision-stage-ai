@@ -3,7 +3,7 @@ import { generateText, Output } from "ai";
 import { z } from "zod";
 import { createLovableAiGatewayProvider } from "../ai-gateway.server";
 
-const MODEL = "google/gemini-2.5-flash";
+const MODEL = "google/gemini-3-flash-preview";
 
 function getModel() {
   const key = process.env.LOVABLE_API_KEY;
@@ -33,12 +33,31 @@ export type GradeResult = z.infer<typeof GradeSchema>;
 
 function fallbackGrade(data: z.infer<typeof GradeInput>): GradeResult {
   const ans = data.answer.toLowerCase();
+  const stopWords = new Set([
+    "ответ",
+    "называет",
+    "учитывает",
+    "упомянута",
+    "упомянуты",
+    "упомянут",
+    "критерий",
+    "конкретный",
+    "через",
+    "роль",
+    "если",
+    "что",
+    "как",
+    "для",
+    "или",
+    "the",
+    "and",
+  ]);
   const met: string[] = [];
   const unmet: string[] = [];
   for (const c of data.criteria) {
-    const words = c.toLowerCase().match(/[a-zа-яё]{4,}/gi) ?? [];
+    const words = (c.toLowerCase().match(/[a-zа-яё]{4,}/gi) ?? []).filter((w) => !stopWords.has(w));
     const hits = words.filter((w) => ans.includes(w)).length;
-    if (data.answer.length > 40 && hits >= Math.max(1, Math.floor(words.length * 0.2))) met.push(c);
+    if (data.answer.length > 25 && hits >= Math.max(1, Math.floor(words.length * 0.18))) met.push(c);
     else unmet.push(c);
   }
   const passed = unmet.length === 0;
@@ -99,6 +118,54 @@ const ReplySchema = z.object({
 
 export type CallReply = z.infer<typeof ReplySchema>;
 
+function fallbackCallReply(data: z.infer<typeof CallInput>): CallReply {
+  const text = data.userMessage.toLowerCase();
+  const ignored = new Set(["если", "только", "вопрос", "спросить", "раскрывает", "выяснится", "котор", "про"]);
+  const revealWords = [...`${data.revealCondition} ${data.hiddenInfo}`.toLowerCase().matchAll(/[a-zа-яё]{4,}/gi)]
+    .map((m) => m[0])
+    .filter((w) => !ignored.has(w));
+  const intentWords = [
+    "статус",
+    "готов",
+    "компонент",
+    "api",
+    "срок",
+    "время",
+    "сколько",
+    "занят",
+    "загрузка",
+    "почему",
+    "риск",
+    "оценк",
+    "входит",
+    "блокер",
+    "мешает",
+  ];
+  const shouldReveal = [...revealWords, ...intentWords].some((word) => text.includes(word));
+
+  if (shouldReveal) {
+    const detail = data.hiddenInfo.replace(/[.!?…]+$/u, "");
+    return {
+      reply: `Да, важная деталь: ${detail}. Я бы отталкивался именно от этого, прежде чем обещать срок или решение.`,
+      revealed: true,
+    };
+  }
+
+  const role = data.personaRole.toLowerCase();
+  const nudge = role.includes("разработ")
+    ? "Могу объяснить техническую часть, но лучше задай вопрос точнее: про сроки, блокеры или что входит в работу."
+    : role.includes("дизайн")
+      ? "Я могу рассказать про макеты и загрузку, если спросишь конкретнее."
+      : role.includes("ceo") || role.includes("спонсор")
+        ? "Мне важно понять, что именно мешает релизу и какой у тебя план как PM."
+        : "Давай разберём ситуацию предметно: спроси про риск, срок, объём или зависимость.";
+
+  return {
+    reply: `${data.personaName}: ${nudge}`,
+    revealed: false,
+  };
+}
+
 export const callReply = createServerFn({ method: "POST" })
   .inputValidator((d: unknown) => CallInput.parse(d))
   .handler(async ({ data }): Promise<CallReply> => {
@@ -109,7 +176,7 @@ export const callReply = createServerFn({ method: "POST" })
       const { output } = await generateText({
         model: getModel(),
         output: Output.object({ schema: ReplySchema }),
-        prompt: `Ты играешь персонажа в телефонном звонке-симуляции для обучения проектных менеджеров. Оставайся в роли, говори естественно и реалистично, как живой человек. Отвечай на русском языке.
+        prompt: `Ты играешь персонажа в Zoom-like созвоне-симуляции для обучения проектных менеджеров. Оставайся в роли, говори естественно и реалистично, как живой человек. Отвечай на русском языке.
 
 ПЕРСОНАЖ: ${data.personaName}, ${data.personaRole}
 ХАРАКТЕР: ${data.character}
@@ -117,7 +184,7 @@ export const callReply = createServerFn({ method: "POST" })
 СКРЫТАЯ ИНФОРМАЦИЯ (НЕ раскрывай по умолчанию): ${data.hiddenInfo}
 УСЛОВИЕ РАСКРЫТИЯ: ${data.revealCondition}
 
-ВАЖНО: раскрывай скрытую информацию ТОЛЬКО если PM явно задал вопрос, подпадающий под условие раскрытия. Иначе отвечай в характере, не выдавая её.
+ВАЖНО: раскрывай скрытую информацию ТОЛЬКО если PM явно задал вопрос, подпадающий под условие раскрытия. Иначе отвечай в характере, не выдавая её. Никогда не отвечай «плохо слышно», если сообщение пользователя текстовое и понятно.
 
 ИСТОРИЯ ЗВОНКА:
 ${convo || "(звонок только начался)"}
@@ -129,9 +196,6 @@ PM только что сказал: "${data.userMessage}"
       return output;
     } catch (error) {
       console.error("callReply fallback", error);
-      return {
-        reply: `(${data.personaName}) Извини, плохо слышно. Можешь переформулировать вопрос?`,
-        revealed: false,
-      };
+      return fallbackCallReply(data);
     }
   });
