@@ -173,7 +173,7 @@ function TheoryStep({ lesson, onNext }: { lesson: ReturnType<typeof getLesson> &
 }
 
 /* ---------------- Task dispatcher ---------------- */
-function TaskStep({ task, onComplete }: { task: Task; onComplete: (s: AttemptStatus) => void }) {
+function TaskStep({ task, onComplete }: { task: Task; onComplete: (s: AttemptStatus, score?: number) => void }) {
   switch (task.type) {
     case "quiz":
       return <QuizStep task={task} onComplete={onComplete} />;
