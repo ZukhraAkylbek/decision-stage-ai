@@ -215,6 +215,7 @@ export function CallPanel({
         setTurns((prev) => [...prev, { role: "persona", text: out.reply }]);
         if (out.revealed) markRevealed();
         void speak(out.reply);
+        if (Math.random() < 0.55) setTimeout(nudgeObservers, 900);
       } catch {
         const fallback = `${task.personaName}: Я слышу тебя. Давай конкретно: спроси про сроки, блокеры, объём работ или готовность ключевой части.`;
         setTurns((prev) => [...prev, { role: "persona", text: fallback }]);
