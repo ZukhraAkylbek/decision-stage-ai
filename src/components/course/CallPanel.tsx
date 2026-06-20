@@ -272,14 +272,19 @@ export function CallPanel({
         },
       })) as GradeResult;
       setResult(res);
+      // call score: criteria coverage, bonus for revealing the hidden detail, penalty per hint
+      const total = task.criteria.length || 1;
+      const coverage = Math.min(res.metCriteria.length, total) / total;
+      let score = Math.round(coverage * 80 + (revealedRef.current ? 20 : 0) - hintCount * 8);
+      score = Math.max(20, Math.min(100, score));
       if (res.passed) {
-        onComplete(hintCount > 0 ? "solved_with_help" : "solved_self", answer);
+        onComplete(hintCount > 0 ? "solved_with_help" : "solved_self", answer, score);
       } else {
         setHintCount((c) => c + 1);
       }
     } catch {
       setError("Проверка временно недоступна. Ответ сохранён как выполненный с подсказкой.");
-      onComplete("solved_with_help", answer);
+      onComplete("solved_with_help", answer, 60);
     } finally {
       setGrading(false);
     }
