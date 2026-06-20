@@ -434,6 +434,18 @@ export function CallPanel({
 
           {phase === "talk" ? (
             <div className="border-t p-3">
+              <div className="mb-3 flex flex-wrap justify-center gap-2">
+                {promptChips.map((prompt) => (
+                  <button
+                    key={prompt}
+                    type="button"
+                    onClick={() => setDraft(prompt)}
+                    className="rounded-full border bg-secondary/60 px-3 py-1 text-xs text-muted-foreground transition-colors hover:bg-secondary hover:text-foreground"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
               <div className="mb-3 flex items-center justify-center gap-2">
                 <Button type="button" variant={muted ? "destructive" : "secondary"} size="icon" onClick={() => setMuted((v) => !v)}>
                   {muted ? <MicOff className="size-4" /> : <Mic className="size-4" />}
