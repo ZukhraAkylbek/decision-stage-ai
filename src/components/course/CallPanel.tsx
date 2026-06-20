@@ -61,6 +61,47 @@ function buildParticipants(task: CallTask): Participant[] {
     ...extra.slice(0, 2),
   ];
 }
+const OBSERVER_LINES: { match: string; lines: string[] }[] = [
+  {
+    match: "developer",
+    lines: [
+      "С технической стороны добавлю: тут есть зависимость, которую важно проговорить.",
+      "Могу прикинуть оценку, но мне нужен зафиксированный объём.",
+      "Если решим менять scope — это снова ляжет на бэкенд.",
+    ],
+  },
+  {
+    match: "designer",
+    lines: [
+      "По макетам: финальную версию отдам, как только закрепим требования.",
+      "Я бы заранее согласовала состояние для пустых экранов.",
+      "Дизайн готов на 80%, остаток зависит от ваших вводных.",
+    ],
+  },
+  {
+    match: "stakeholder",
+    lines: [
+      "Для меня главное — чтобы это било в бизнес-метрику.",
+      "Жду от вас понятный план и сроки, а не общие слова.",
+      "Если есть риск для релиза — хочу услышать его сейчас.",
+    ],
+  },
+  {
+    match: "lead",
+    lines: [
+      "По доске видно, что часть задач уже в риске.",
+      "Команда готова, но нужен приоритет — что берём первым.",
+      "Давайте зафиксируем, кто за что отвечает после звонка.",
+    ],
+  },
+];
+
+function observerLine(role: string): string {
+  const r = role.toLowerCase();
+  const bucket = OBSERVER_LINES.find((b) => r.includes(b.match)) ?? OBSERVER_LINES[3];
+  return bucket.lines[Math.floor(Math.random() * bucket.lines.length)];
+}
+
 
 function suggestedPrompts(task: CallTask) {
   const text = `${task.brief} ${task.personaRole} ${task.hiddenInfo} ${task.revealCondition}`.toLowerCase();
