@@ -110,7 +110,7 @@ function PracticeRunner() {
 
       {/* Desk surface with laptop + phone */}
       <div className="relative z-10 max-w-6xl mx-auto px-4 pb-10 pt-5">
-        <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
+        <div className="flex flex-col lg:flex-row gap-5 items-center lg:items-start">
           {/* Laptop */}
           <Laptop>
             {stage === "intro" && <IntroScreen practice={practice} onStart={() => setStage("tasks")} />}
