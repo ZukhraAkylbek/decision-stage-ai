@@ -249,6 +249,9 @@ export function CallPanel({
       setTurns([{ role: "persona", text: out.reply }]);
       if (out.revealed) markRevealed();
       void speak(out.reply);
+      setObserverSpeech(
+        observers.reduce((acc, o) => ({ ...acc, [o.name]: observerLine(o.role) }), {}),
+      );
     } catch {
       const firstLine = `${task.personaName}: Привет. ${task.brief} Я готов обсудить, но мне нужны конкретные вопросы от PM.`;
       setTurns([{ role: "persona", text: firstLine }]);
