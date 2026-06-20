@@ -138,7 +138,7 @@ function LessonRunner() {
           />
         )}
         {isSummary && (
-          <SummaryStep lesson={lesson} outcomes={outcomes} onBackToTheory={() => setStep(0)} onFinish={() => navigate({ to: "/course" })} />
+          <SummaryStep lesson={lesson} outcomes={outcomes} scores={scores} onBackToTheory={() => setStep(0)} onFinish={() => navigate({ to: "/course" })} />
         )}
       </main>
     </div>
