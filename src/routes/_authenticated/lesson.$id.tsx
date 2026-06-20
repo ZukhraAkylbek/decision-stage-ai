@@ -175,20 +175,20 @@ function TheoryStep({ lesson, onNext }: { lesson: ReturnType<typeof getLesson> &
 }
 
 /* ---------------- Task dispatcher ---------------- */
-function TaskStep({ task, onComplete }: { task: Task; onComplete: (s: AttemptStatus, score?: number) => void }) {
+function TaskStep({ lessonId, task, onComplete }: { lessonId: string; task: Task; onComplete: (s: AttemptStatus, score?: number) => void }) {
   switch (task.type) {
     case "quiz":
-      return <QuizStep task={task} onComplete={onComplete} />;
+      return <QuizStep lessonId={lessonId} task={task} onComplete={onComplete} />;
     case "calculation":
-      return <CalcStep task={task} onComplete={onComplete} />;
+      return <CalcStep lessonId={lessonId} task={task} onComplete={onComplete} />;
     case "case_choice":
-      return <CaseStep task={task} onComplete={onComplete} />;
+      return <CaseStep lessonId={lessonId} task={task} onComplete={onComplete} />;
     case "written":
-      return <WrittenStep task={task} onComplete={onComplete} />;
+      return <WrittenStep lessonId={lessonId} task={task} onComplete={onComplete} />;
     case "call":
       return (
         <div className="rounded-2xl border bg-card shadow-card overflow-hidden h-[78vh] min-h-[620px] flex flex-col">
-          <CallPanel task={task} onComplete={(s, _a, score) => onComplete(s, score)} />
+          <CallPanel lessonId={lessonId} task={task} onComplete={(s, _a, score) => onComplete(s, score)} />
         </div>
       );
   }
