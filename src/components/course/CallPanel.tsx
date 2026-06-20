@@ -119,9 +119,11 @@ function suggestedPrompts(task: CallTask) {
 
 export function CallPanel({
   task,
+  lessonId,
   onComplete,
 }: {
   task: CallTask;
+  lessonId: string;
   onComplete: (status: "solved_self" | "solved_with_help", answer: string, score?: number) => void;
 }) {
   const reply = useServerFn(callReply);
