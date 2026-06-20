@@ -134,6 +134,7 @@ function LessonRunner() {
         {task && (
           <TaskStep
             key={taskIndex}
+            lessonId={lesson.id}
             task={task}
             onComplete={completeTask}
           />
