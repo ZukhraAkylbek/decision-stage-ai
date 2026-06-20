@@ -7,7 +7,8 @@ import { getAdminStatus, claimAdmin } from "@/lib/admin/admin.functions";
 import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminLessons } from "@/components/admin/AdminLessons";
 import { AdminCallLogs } from "@/components/admin/AdminCallLogs";
-import { LayoutDashboard, BookOpen, PhoneCall, ShieldCheck, ArrowLeft } from "lucide-react";
+import { AdminStudents } from "@/components/admin/AdminStudents";
+import { LayoutDashboard, BookOpen, PhoneCall, ShieldCheck, ArrowLeft, Users } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
