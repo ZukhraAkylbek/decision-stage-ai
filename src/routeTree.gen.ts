@@ -22,7 +22,7 @@ import { Route as AuthenticatedAdminRouteImport } from './routes/_authenticated/
 import { Route as SimulationsIdIndexRouteImport } from './routes/simulations.$id.index'
 import { Route as SimulationsIdResultsRouteImport } from './routes/simulations.$id.results'
 import { Route as AuthenticatedPracticeIdRouteImport } from './routes/_authenticated/practice.$id'
-import { Route as AuthenticatedLessonIdRouteImport } from './routes/_authenticated/lesson.$id'
+import { Route as AuthenticatedLessonsSlugRouteImport } from './routes/_authenticated/lessons.$slug'
 
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
@@ -88,11 +88,12 @@ const AuthenticatedPracticeIdRoute = AuthenticatedPracticeIdRouteImport.update({
   path: '/practice/$id',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AuthenticatedLessonIdRoute = AuthenticatedLessonIdRouteImport.update({
-  id: '/lesson/$id',
-  path: '/lesson/$id',
-  getParentRoute: () => AuthenticatedRouteRoute,
-} as any)
+const AuthenticatedLessonsSlugRoute =
+  AuthenticatedLessonsSlugRouteImport.update({
+    id: '/lessons/$slug',
+    path: '/lessons/$slug',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -104,7 +105,7 @@ export interface FileRoutesByFullPath {
   '/api/tts': typeof ApiTtsRoute
   '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
-  '/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/lessons/$slug': typeof AuthenticatedLessonsSlugRoute
   '/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id/': typeof SimulationsIdIndexRoute
@@ -118,7 +119,7 @@ export interface FileRoutesByTo {
   '/api/transcribe': typeof ApiTranscribeRoute
   '/api/tts': typeof ApiTtsRoute
   '/simulations': typeof SimulationsIndexRoute
-  '/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/lessons/$slug': typeof AuthenticatedLessonsSlugRoute
   '/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id': typeof SimulationsIdIndexRoute
@@ -135,7 +136,7 @@ export interface FileRoutesById {
   '/api/tts': typeof ApiTtsRoute
   '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
-  '/_authenticated/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/_authenticated/lessons/$slug': typeof AuthenticatedLessonsSlugRoute
   '/_authenticated/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id/': typeof SimulationsIdIndexRoute
@@ -152,7 +153,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/simulations/$id'
     | '/simulations/'
-    | '/lesson/$id'
+    | '/lessons/$slug'
     | '/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id/'
@@ -166,7 +167,7 @@ export interface FileRouteTypes {
     | '/api/transcribe'
     | '/api/tts'
     | '/simulations'
-    | '/lesson/$id'
+    | '/lessons/$slug'
     | '/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id'
@@ -182,7 +183,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/simulations/$id'
     | '/simulations/'
-    | '/_authenticated/lesson/$id'
+    | '/_authenticated/lessons/$slug'
     | '/_authenticated/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id/'
@@ -293,11 +294,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPracticeIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/lesson/$id': {
-      id: '/_authenticated/lesson/$id'
-      path: '/lesson/$id'
-      fullPath: '/lesson/$id'
-      preLoaderRoute: typeof AuthenticatedLessonIdRouteImport
+    '/_authenticated/lessons/$slug': {
+      id: '/_authenticated/lessons/$slug'
+      path: '/lessons/$slug'
+      fullPath: '/lessons/$slug'
+      preLoaderRoute: typeof AuthenticatedLessonsSlugRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
   }
@@ -305,13 +306,13 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAdminRoute: typeof AuthenticatedAdminRoute
-  AuthenticatedLessonIdRoute: typeof AuthenticatedLessonIdRoute
+  AuthenticatedLessonsSlugRoute: typeof AuthenticatedLessonsSlugRoute
   AuthenticatedPracticeIdRoute: typeof AuthenticatedPracticeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAdminRoute: AuthenticatedAdminRoute,
-  AuthenticatedLessonIdRoute: AuthenticatedLessonIdRoute,
+  AuthenticatedLessonsSlugRoute: AuthenticatedLessonsSlugRoute,
   AuthenticatedPracticeIdRoute: AuthenticatedPracticeIdRoute,
 }
 

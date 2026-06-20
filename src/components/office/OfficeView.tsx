@@ -264,7 +264,7 @@ export function OfficeView(props: OfficeViewProps) {
             {/* Photoreal office background (back wall + desk) */}
             <img
               src={officeBg}
-              alt=""
+              alt="Интерьер IT-офиса: рабочий стол у тёмной стены с маркерной доской"
               draggable={false}
               className="absolute inset-0 w-full h-full object-cover select-none"
             />
@@ -313,32 +313,28 @@ export function OfficeView(props: OfficeViewProps) {
             {/* Static desk decor (non-interactive) */}
             <img
               src={mugImg}
-              alt=""
-              aria-hidden
+              alt="Кружка с кофе на рабочем столе"
               draggable={false}
               className="absolute pointer-events-none select-none drop-shadow-[0_18px_18px_rgba(0,0,0,0.65)]"
               style={{ left: "2%", bottom: "5%", width: "9%" }}
             />
             <img
               src={notebookImg}
-              alt=""
-              aria-hidden
+              alt="Ноутбук, лежащий на столе"
               draggable={false}
               className="absolute pointer-events-none select-none drop-shadow-[0_18px_18px_rgba(0,0,0,0.6)]"
               style={{ left: "13%", bottom: "2%", width: "12%", transform: "rotate(-6deg)" }}
             />
             <img
               src={plantImg}
-              alt=""
-              aria-hidden
+              alt="Комнатное растение в горшке на столе"
               draggable={false}
               className="absolute pointer-events-none select-none drop-shadow-[0_18px_18px_rgba(0,0,0,0.6)]"
               style={{ right: "1%", bottom: "4%", width: "10%" }}
             />
             <img
               src={stickyImg}
-              alt=""
-              aria-hidden
+              alt="Стикеры с заметками"
               draggable={false}
               className="absolute pointer-events-none select-none drop-shadow-[0_10px_12px_rgba(0,0,0,0.5)]"
               style={{ right: "20%", bottom: "2%", width: "11%", transform: "rotate(4deg)" }}
@@ -582,7 +578,7 @@ function DeskPhotoObject({
       >
         <img
           src={src}
-          alt=""
+          alt={label}
           draggable={false}
           className={cn(
             "w-full h-auto select-none",
