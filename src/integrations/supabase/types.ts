@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      appeals: {
+        Row: {
+          attempt_number: number
+          call_transcript: Json | null
+          complaint_category: string
+          complaint_text: string
+          created_at: string
+          id: string
+          lesson_id: string
+          status: string
+          student_input: string | null
+          system_feedback: string | null
+          task_type: string
+          user_id: string
+        }
+        Insert: {
+          attempt_number?: number
+          call_transcript?: Json | null
+          complaint_category: string
+          complaint_text: string
+          created_at?: string
+          id?: string
+          lesson_id: string
+          status?: string
+          student_input?: string | null
+          system_feedback?: string | null
+          task_type: string
+          user_id: string
+        }
+        Update: {
+          attempt_number?: number
+          call_transcript?: Json | null
+          complaint_category?: string
+          complaint_text?: string
+          created_at?: string
+          id?: string
+          lesson_id?: string
+          status?: string
+          student_input?: string | null
+          system_feedback?: string | null
+          task_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       lesson_progress: {
         Row: {
           completed_at: string | null
