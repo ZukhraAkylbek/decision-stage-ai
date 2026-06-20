@@ -20,6 +20,7 @@ import { Route as ApiTtsRouteImport } from './routes/api/tts'
 import { Route as ApiTranscribeRouteImport } from './routes/api/transcribe'
 import { Route as SimulationsIdIndexRouteImport } from './routes/simulations.$id.index'
 import { Route as SimulationsIdResultsRouteImport } from './routes/simulations.$id.results'
+import { Route as AuthenticatedPracticeIdRouteImport } from './routes/_authenticated/practice.$id'
 import { Route as AuthenticatedLessonIdRouteImport } from './routes/_authenticated/lesson.$id'
 
 const ProgressRoute = ProgressRouteImport.update({
@@ -76,6 +77,11 @@ const SimulationsIdResultsRoute = SimulationsIdResultsRouteImport.update({
   path: '/results',
   getParentRoute: () => SimulationsIdRoute,
 } as any)
+const AuthenticatedPracticeIdRoute = AuthenticatedPracticeIdRouteImport.update({
+  id: '/practice/$id',
+  path: '/practice/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 const AuthenticatedLessonIdRoute = AuthenticatedLessonIdRouteImport.update({
   id: '/lesson/$id',
   path: '/lesson/$id',
@@ -92,6 +98,7 @@ export interface FileRoutesByFullPath {
   '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
   '/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id/': typeof SimulationsIdIndexRoute
 }
@@ -104,6 +111,7 @@ export interface FileRoutesByTo {
   '/api/tts': typeof ApiTtsRoute
   '/simulations': typeof SimulationsIndexRoute
   '/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id': typeof SimulationsIdIndexRoute
 }
@@ -119,6 +127,7 @@ export interface FileRoutesById {
   '/simulations/$id': typeof SimulationsIdRouteWithChildren
   '/simulations/': typeof SimulationsIndexRoute
   '/_authenticated/lesson/$id': typeof AuthenticatedLessonIdRoute
+  '/_authenticated/practice/$id': typeof AuthenticatedPracticeIdRoute
   '/simulations/$id/results': typeof SimulationsIdResultsRoute
   '/simulations/$id/': typeof SimulationsIdIndexRoute
 }
@@ -134,6 +143,7 @@ export interface FileRouteTypes {
     | '/simulations/$id'
     | '/simulations/'
     | '/lesson/$id'
+    | '/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/api/tts'
     | '/simulations'
     | '/lesson/$id'
+    | '/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id'
   id:
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/simulations/$id'
     | '/simulations/'
     | '/_authenticated/lesson/$id'
+    | '/_authenticated/practice/$id'
     | '/simulations/$id/results'
     | '/simulations/$id/'
   fileRoutesById: FileRoutesById
@@ -255,6 +267,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SimulationsIdResultsRouteImport
       parentRoute: typeof SimulationsIdRoute
     }
+    '/_authenticated/practice/$id': {
+      id: '/_authenticated/practice/$id'
+      path: '/practice/$id'
+      fullPath: '/practice/$id'
+      preLoaderRoute: typeof AuthenticatedPracticeIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/lesson/$id': {
       id: '/_authenticated/lesson/$id'
       path: '/lesson/$id'
@@ -267,10 +286,12 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedLessonIdRoute: typeof AuthenticatedLessonIdRoute
+  AuthenticatedPracticeIdRoute: typeof AuthenticatedPracticeIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedLessonIdRoute: AuthenticatedLessonIdRoute,
+  AuthenticatedPracticeIdRoute: AuthenticatedPracticeIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
