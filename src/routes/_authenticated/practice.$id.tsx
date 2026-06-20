@@ -21,9 +21,9 @@ import {
   Building2,
   Wifi,
   Battery,
-  Signal,
+  SignalHigh,
 } from "lucide-react";
-import officeBg from "@/assets/office-bg.jpg";
+import officeDesk from "@/assets/office-desk.jpg";
 
 export const Route = createFileRoute("/_authenticated/practice/$id")({
   component: PracticeRunner,
@@ -32,9 +32,9 @@ export const Route = createFileRoute("/_authenticated/practice/$id")({
 type Outcome = "solved_self" | "solved_with_help" | "failed";
 
 const CHANNEL_META = {
-  chat: { icon: MessageSquare, label: "Командный чат", tint: "text-sky-300" },
-  email: { icon: Mail, label: "Почта", tint: "text-amber-300" },
-  call: { icon: PhoneCall, label: "Звонок", tint: "text-emerald-300" },
+  chat: { icon: MessageSquare, label: "Командный чат", tint: "text-sky-400", dot: "bg-sky-400" },
+  email: { icon: Mail, label: "Почта", tint: "text-amber-400", dot: "bg-amber-400" },
+  call: { icon: PhoneCall, label: "Звонок", tint: "text-emerald-400", dot: "bg-emerald-400" },
 } as const;
 
 function PracticeRunner() {
@@ -76,109 +76,199 @@ function PracticeRunner() {
   }
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[oklch(0.16_0.025_265)] text-white">
-      {/* Office wall ambience */}
-      <img src={officeBg} alt="" aria-hidden className="absolute inset-0 w-full h-full object-cover opacity-25 select-none" />
-      <div
-        className="absolute inset-0 -z-0 pointer-events-none"
-        style={{
-          background:
-            "radial-gradient(ellipse at 60% -10%, oklch(0.30 0.05 265 / 0.7), transparent 55%), linear-gradient(180deg, oklch(0.18 0.03 265 / 0.85), oklch(0.10 0.02 265 / 0.96))",
-        }}
-        aria-hidden
+    <div className="relative min-h-screen overflow-hidden bg-[oklch(0.12_0.02_255)] text-white">
+      {/* Desk scene */}
+      <img
+        src={officeDesk}
+        alt="Рабочий стол в офисе"
+        width={1920}
+        height={1080}
+        className="absolute inset-0 w-full h-full object-cover"
       />
+      <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/40 to-black/75" aria-hidden />
 
-      <div className="relative z-10 max-w-3xl mx-auto px-4 py-6">
-        {/* Header */}
-        <div className="flex items-center justify-between gap-3 rounded-xl bg-black/40 backdrop-blur-md border border-white/10 px-4 py-2.5 shadow-xl">
+      {/* Top bar */}
+      <div className="relative z-20 max-w-6xl mx-auto px-4 pt-4">
+        <div className="flex items-center justify-between gap-3 rounded-xl bg-black/45 backdrop-blur-md border border-white/10 px-4 py-2.5 shadow-xl">
           <Link to="/course" className="inline-flex items-center gap-1.5 text-xs text-white/70 hover:text-white">
-            <ArrowLeft className="size-4" /> Курс
+            <ArrowLeft className="size-4" /> Выйти из офиса
           </Link>
           <div className="flex items-center gap-2 min-w-0">
             <div className="size-7 rounded-md bg-gradient-primary grid place-items-center shrink-0 shadow-glow">
               <Building2 className="size-4 text-white" />
             </div>
             <div className="min-w-0 text-right sm:text-left">
-              <div className="text-[10px] uppercase tracking-[0.18em] text-white/50 leading-none">Практика в офисе</div>
+              <div className="text-[10px] uppercase tracking-[0.18em] text-white/50 leading-none">Рабочий день · PM</div>
               <div className="text-sm font-semibold truncate">{practice.title}</div>
             </div>
           </div>
           <div className="hidden sm:flex items-center gap-1.5 text-white/50">
-            <Signal className="size-3.5" /> <Wifi className="size-3.5" /> <Battery className="size-4" />
+            <SignalHigh className="size-3.5" /> <Wifi className="size-3.5" /> <Battery className="size-4" />
           </div>
         </div>
+      </div>
 
-        {stage === "intro" && (
-          <IntroCard practice={practice} onStart={() => setStage("tasks")} />
-        )}
+      {/* Desk surface with laptop + phone */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4 pb-10 pt-5">
+        <div className="grid lg:grid-cols-[1fr_300px] gap-5 items-start">
+          {/* Laptop */}
+          <Laptop>
+            {stage === "intro" && <IntroScreen practice={practice} onStart={() => setStage("tasks")} />}
+            {stage === "tasks" && (
+              <TaskScreen
+                key={taskIndex}
+                practiceId={practice.id}
+                task={practice.tasks[taskIndex]}
+                index={taskIndex}
+                total={practice.tasks.length}
+                onDone={finishTask}
+              />
+            )}
+            {stage === "summary" && (
+              <SummaryScreen practice={practice} scores={scores} onFinish={() => navigate({ to: "/course" })} />
+            )}
+          </Laptop>
 
-        {stage === "tasks" && (
-          <>
-            {/* progress dots */}
-            <div className="mt-5 flex items-center gap-1.5">
-              {practice.tasks.map((_, i) => (
-                <div
-                  key={i}
-                  className={cn(
-                    "h-1.5 flex-1 rounded-full transition-colors",
-                    outcomes[i] === "solved_self" && "bg-emerald-400",
-                    outcomes[i] === "solved_with_help" && "bg-amber-400",
-                    outcomes[i] === "failed" && "bg-destructive",
-                    !outcomes[i] && i === taskIndex && "bg-primary",
-                    !outcomes[i] && i !== taskIndex && "bg-white/15",
-                  )}
-                />
-              ))}
-            </div>
-            <TaskCard
-              key={taskIndex}
-              practiceId={practice.id}
-              task={practice.tasks[taskIndex]}
-              index={taskIndex}
-              total={practice.tasks.length}
-              onDone={finishTask}
-            />
-          </>
-        )}
-
-        {stage === "summary" && (
-          <SummaryCard practice={practice} scores={scores} onFinish={() => navigate({ to: "/course" })} />
-        )}
+          {/* Phone with incoming messages */}
+          <Phone
+            practice={practice}
+            activeIndex={stage === "tasks" ? taskIndex : -1}
+            outcomes={outcomes}
+            stage={stage}
+          />
+        </div>
       </div>
     </div>
   );
 }
 
-function IntroCard({ practice, onStart }: { practice: ReturnType<typeof getPractice> & {}; onStart: () => void }) {
+/* ---------- Laptop frame ---------- */
+function Laptop({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 bg-black/45 backdrop-blur-xl p-6 shadow-2xl animate-in fade-in">
-      <div className="text-[11px] uppercase tracking-[0.18em] text-primary/90 font-semibold">{practice.covers}</div>
-      <h1 className="mt-2 text-2xl font-bold">{practice.title}</h1>
+    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* screen */}
+      <div className="rounded-t-2xl border border-white/15 bg-[oklch(0.17_0.02_255)] shadow-2xl overflow-hidden ring-1 ring-black/40">
+        {/* webcam notch + browser chrome */}
+        <div className="flex items-center gap-1.5 px-4 py-2 bg-black/40 border-b border-white/10">
+          <span className="size-2.5 rounded-full bg-red-400/80" />
+          <span className="size-2.5 rounded-full bg-amber-400/80" />
+          <span className="size-2.5 rounded-full bg-emerald-400/80" />
+          <div className="ml-3 flex-1 h-5 rounded-md bg-white/5 border border-white/10 grid place-items-center">
+            <span className="text-[10px] text-white/40 tracking-wide">workspace.pm-sim.io</span>
+          </div>
+        </div>
+        <div className="p-5 sm:p-6 min-h-[360px]">{children}</div>
+      </div>
+      {/* hinge / base */}
+      <div className="mx-auto h-3 w-[104%] -ml-[2%] rounded-b-xl bg-gradient-to-b from-[oklch(0.30_0.01_255)] to-[oklch(0.20_0.01_255)] shadow-lg border-x border-b border-white/10" />
+      <div className="mx-auto h-1.5 w-24 rounded-b-md bg-black/40" />
+    </div>
+  );
+}
+
+/* ---------- Phone with message queue ---------- */
+function Phone({
+  practice,
+  activeIndex,
+  outcomes,
+  stage,
+}: {
+  practice: NonNullable<ReturnType<typeof getPractice>>;
+  activeIndex: number;
+  outcomes: Record<number, Outcome>;
+  stage: "intro" | "tasks" | "summary";
+}) {
+  const pending = practice.tasks.filter((_, i) => !outcomes[i]).length;
+  return (
+    <div className="hidden lg:block animate-in fade-in slide-in-from-right-4 duration-500">
+      <div className="mx-auto w-[280px] rounded-[2rem] border-[6px] border-black/70 bg-[oklch(0.13_0.02_255)] shadow-2xl overflow-hidden">
+        {/* status bar */}
+        <div className="relative bg-black/50 px-5 pt-2.5 pb-2 flex items-center justify-between text-[10px] text-white/70">
+          <span>9:41</span>
+          <span className="absolute left-1/2 -translate-x-1/2 top-1.5 h-4 w-20 rounded-full bg-black" />
+          <span className="flex items-center gap-1">
+            <SignalHigh className="size-3" /> <Wifi className="size-3" /> <Battery className="size-3.5" />
+          </span>
+        </div>
+        <div className="px-3 py-3">
+          <div className="flex items-center justify-between px-1 mb-2">
+            <span className="text-sm font-semibold">Входящие</span>
+            {pending > 0 && (
+              <span className="text-[10px] rounded-full bg-destructive px-1.5 py-0.5 font-bold">{pending}</span>
+            )}
+          </div>
+          <div className="space-y-2">
+            {practice.tasks.map((t, i) => {
+              const meta = CHANNEL_META[t.channel];
+              const Icon = meta.icon;
+              const done = !!outcomes[i];
+              const active = i === activeIndex;
+              return (
+                <div
+                  key={i}
+                  className={cn(
+                    "relative rounded-xl border px-2.5 py-2 transition-all",
+                    active
+                      ? "border-primary/60 bg-primary/15 shadow-glow"
+                      : done
+                        ? "border-white/5 bg-white/[0.03] opacity-60"
+                        : "border-white/10 bg-white/5",
+                  )}
+                >
+                  {!done && !active && stage !== "intro" && (
+                    <span className={cn("absolute -left-0.5 -top-0.5 size-2 rounded-full animate-pulse", meta.dot)} />
+                  )}
+                  <div className="flex items-center gap-2">
+                    <div className="size-8 shrink-0 rounded-full bg-white/10 grid place-items-center text-base">
+                      {t.avatar}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1 text-[11px] font-semibold truncate">
+                        {t.from}
+                        <Icon className={cn("size-3", meta.tint)} />
+                      </div>
+                      <div className="text-[10px] text-white/45 truncate">{t.message}</div>
+                    </div>
+                    {done && <CheckCircle2 className="size-3.5 text-emerald-400 shrink-0" />}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+      <p className="mt-2 text-center text-[11px] text-white/40">Сообщения и звонки от команды</p>
+    </div>
+  );
+}
+
+/* ---------- Intro ---------- */
+function IntroScreen({
+  practice,
+  onStart,
+}: {
+  practice: NonNullable<ReturnType<typeof getPractice>>;
+  onStart: () => void;
+}) {
+  return (
+    <div>
+      <div className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold">{practice.covers}</div>
+      <h1 className="mt-2 text-2xl font-bold text-foreground/95">{practice.title}</h1>
       <p className="mt-1 text-white/70">{practice.subtitle}</p>
       <p className="mt-4 leading-relaxed text-white/80">{practice.intro}</p>
-      <div className="mt-5 grid gap-2 sm:grid-cols-3">
-        {practice.tasks.map((t, i) => {
-          const meta = CHANNEL_META[t.channel];
-          const Icon = meta.icon;
-          return (
-            <div key={i} className="rounded-lg border border-white/10 bg-white/5 p-3">
-              <div className={cn("flex items-center gap-1.5 text-[11px] font-medium", meta.tint)}>
-                <Icon className="size-3.5" /> {meta.label}
-              </div>
-              <div className="mt-1.5 text-sm font-medium">{t.from}</div>
-              <div className="text-[11px] text-white/50">{t.role}</div>
-            </div>
-          );
-        })}
+      <div className="mt-5 rounded-lg border border-white/10 bg-white/5 p-3 text-sm text-white/70">
+        Сегодня в офисе тебя ждут <b className="text-white">{practice.tasks.length}</b> входящих от команды и заказчиков —
+        они уже в телефоне справа. Отвечай как PM, опираясь на пройденные уроки.
       </div>
       <Button className="mt-6 w-full" onClick={onStart}>
-        Войти в офис <ArrowRight className="size-4" />
+        Начать рабочий день <ArrowRight className="size-4" />
       </Button>
     </div>
   );
 }
 
-function TaskCard({
+/* ---------- Task ---------- */
+function TaskScreen({
   practiceId,
   task,
   index,
@@ -232,15 +322,14 @@ function TaskCard({
   }
 
   return (
-    <div className="mt-3 rounded-2xl border border-white/10 bg-black/45 backdrop-blur-xl p-5 shadow-2xl animate-in fade-in">
+    <div>
       <div className="flex items-center justify-between">
         <div className={cn("flex items-center gap-1.5 text-[11px] font-semibold", meta.tint)}>
           <Icon className="size-3.5" /> {meta.label}
         </div>
-        <span className="text-[11px] text-white/40">Задача {index + 1} / {total}</span>
+        <span className="text-[11px] text-white/40">Входящее {index + 1} / {total}</span>
       </div>
 
-      {/* incoming message bubble */}
       <div className="mt-3 flex gap-3">
         <div className="size-10 shrink-0 rounded-full bg-white/10 grid place-items-center text-xl">{task.avatar}</div>
         <div className="min-w-0">
@@ -260,7 +349,7 @@ function TaskCard({
 
       <Textarea
         className="mt-3 min-h-28 bg-white/5 border-white/15 text-white placeholder:text-white/40"
-        placeholder="Напиши свой ответ как PM…"
+        placeholder={task.channel === "call" ? "Что ты скажешь собеседнику?…" : "Напиши свой ответ как PM…"}
         value={answer}
         onChange={(e) => setAnswer(e.target.value)}
         disabled={loading || (result?.passed ?? false)}
@@ -306,12 +395,13 @@ function TaskCard({
   );
 }
 
-function SummaryCard({
+/* ---------- Summary ---------- */
+function SummaryScreen({
   practice,
   scores,
   onFinish,
 }: {
-  practice: ReturnType<typeof getPractice> & {};
+  practice: NonNullable<ReturnType<typeof getPractice>>;
   scores: Record<number, number>;
   onFinish: () => void;
 }) {
@@ -319,7 +409,6 @@ function SummaryCard({
   const avg = Math.round(values.reduce((a, b) => a + b, 0) / Math.max(1, values.length));
 
   const skills = useMemo(() => {
-    // map office channels to PM skills for the radar
     const base = { productThinking: 55, analytics: 55, communication: 55, prioritization: 55, execution: 55, riskManagement: 55 };
     practice.tasks.forEach((t, i) => {
       const s = scores[i] ?? 0;
@@ -334,8 +423,8 @@ function SummaryCard({
   }, [practice.tasks, scores]);
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 bg-black/45 backdrop-blur-xl p-6 shadow-2xl animate-in fade-in">
-      <div className="text-[11px] uppercase tracking-[0.18em] text-primary/90 font-semibold">Итог практики</div>
+    <div>
+      <div className="text-[11px] uppercase tracking-[0.18em] text-primary font-semibold">Итог практики</div>
       <h2 className="mt-2 text-2xl font-bold">Рабочий день закрыт 🎉</h2>
       <div className="mt-4 flex items-center gap-4">
         <div className="rounded-xl bg-white/5 border border-white/10 px-5 py-3 text-center">
@@ -355,11 +444,9 @@ function SummaryCard({
         <LessonRadar skills={skills} />
       </div>
 
-      <div className="mt-5 flex gap-2">
-        <Button className="flex-1" onClick={onFinish}>
-          Вернуться к курсу <ArrowRight className="size-4" />
-        </Button>
-      </div>
+      <Button className="mt-5 w-full" onClick={onFinish}>
+        Вернуться к курсу <ArrowRight className="size-4" />
+      </Button>
     </div>
   );
 }
