@@ -535,6 +535,15 @@ function WrittenStep({ lessonId, task, onComplete }: { lessonId: string; task: E
             <Lightbulb className="size-4" /> Что доработать
           </div>
           <p className="mt-1">{result.guidingQuestion || result.feedback}</p>
+          <AppealButton
+            context={{
+              lessonId,
+              taskType: "written",
+              attemptNumber: revisions,
+              studentInput: answer,
+              systemFeedback: JSON.stringify(result),
+            }}
+          />
         </div>
       )}
 
