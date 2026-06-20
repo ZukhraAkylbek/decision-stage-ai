@@ -62,6 +62,20 @@ function buildParticipants(task: CallTask): Participant[] {
   ];
 }
 
+function suggestedPrompts(task: CallTask) {
+  const text = `${task.brief} ${task.personaRole} ${task.hiddenInfo} ${task.revealCondition}`.toLowerCase();
+  if (text.includes("api") || text.includes("бэкенд") || text.includes("разработ")) {
+    return ["Что сейчас блокирует срок?", "Что входит в твою оценку?", "Какая зависимость самая рискованная?"];
+  }
+  if (text.includes("дизайн") || text.includes("макет")) {
+    return ["Что мешает подготовить макет?", "Какая у тебя загрузка?", "Что нужно зафиксировать в DoR?"];
+  }
+  if (text.includes("бюджет") || text.includes("спонсор") || text.includes("ceo")) {
+    return ["Какой критерий успеха главный?", "Какие ограничения по бюджету?", "Какой риск для релиза самый важный?"];
+  }
+  return ["Что я как PM должен уточнить?", "Какая скрытая зависимость есть?", "Какой следующий шаг ты ждёшь?"];
+}
+
 export function CallPanel({
   task,
   onComplete,
@@ -73,6 +87,7 @@ export function CallPanel({
   const grade = useServerFn(gradeCallAnswer);
 
   const participants = useMemo(() => buildParticipants(task), [task]);
+  const promptChips = useMemo(() => suggestedPrompts(task), [task]);
   const [connected, setConnected] = useState(false);
   const [turns, setTurns] = useState<Turn[]>([]);
   const [revealed, setRevealed] = useState(false);
