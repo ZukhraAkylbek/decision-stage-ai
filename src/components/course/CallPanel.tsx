@@ -411,6 +411,8 @@ export function CallPanel({
                 {participants.map((participant, i) => {
                   const isPersona = participant.kind === "persona";
                   const isUser = participant.kind === "user";
+                  const speech = observerSpeech[participant.name];
+                  const speaking = participant.kind === "observer" && !!speech;
                   return (
                     <div
                       key={participant.name}
@@ -418,6 +420,7 @@ export function CallPanel({
                         "relative min-h-[150px] overflow-hidden rounded-xl border p-3 shadow-card",
                         VIDEO_BACKGROUNDS[i % VIDEO_BACKGROUNDS.length],
                         isPersona && thinking && "ring-2 ring-primary",
+                        speaking && "ring-2 ring-success",
                       )}
                     >
                       <div className="absolute left-3 top-3 rounded-md bg-card/85 px-2 py-1 text-xs font-medium shadow-card">
@@ -432,6 +435,11 @@ export function CallPanel({
                                 <Loader2 className="size-3 animate-spin" />
                               </span>
                             )}
+                            {speaking && (
+                              <span className="absolute -right-1 -top-1 grid size-5 place-items-center rounded-full bg-success text-white">
+                                <Volume2 className="size-3" />
+                              </span>
+                            )}
                           </div>
                         ) : (
                           <div className="grid size-20 place-items-center rounded-2xl bg-card/80">
@@ -439,13 +447,19 @@ export function CallPanel({
                           </div>
                         )}
                       </div>
-                      <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
-                        <span className="truncate rounded-md bg-card/85 px-2 py-1 text-xs text-muted-foreground">
-                          {participant.mood}
-                        </span>
-                        {isUser && muted && <MicOff className="size-4 text-destructive" />}
-                        {isPersona && <Volume2 className="size-4 text-primary" />}
-                      </div>
+                      {speech ? (
+                        <div className="absolute bottom-3 left-3 right-3 rounded-md bg-card/90 px-2 py-1.5 text-[11px] leading-snug shadow-card line-clamp-2">
+                          {speech}
+                        </div>
+                      ) : (
+                        <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between gap-2">
+                          <span className="truncate rounded-md bg-card/85 px-2 py-1 text-xs text-muted-foreground">
+                            {participant.mood}
+                          </span>
+                          {isUser && muted && <MicOff className="size-4 text-destructive" />}
+                          {isPersona && <Volume2 className="size-4 text-primary" />}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
