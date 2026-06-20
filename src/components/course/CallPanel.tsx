@@ -586,6 +586,16 @@ export function CallPanel({
                 <div className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm">
                   <div className="font-medium">Подсказка</div>
                   <p className="mt-1">{result.guidingQuestion || result.feedback}</p>
+                  <AppealButton
+                    context={{
+                      lessonId,
+                      taskType: "call",
+                      attemptNumber: Math.max(1, hintCount),
+                      studentInput: answer,
+                      systemFeedback: JSON.stringify(result),
+                      callTranscript: turns.map((t) => ({ role: t.role, text: t.text })),
+                    }}
+                  />
                 </div>
               )}
 
