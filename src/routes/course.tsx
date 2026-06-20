@@ -6,7 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { LESSONS, lessonStepCount } from "@/lib/course";
 import { getMyProgress } from "@/lib/course/progress.functions";
 import { Button } from "@/components/ui/button";
-import { GraduationCap, CheckCircle2, Lock, PlayCircle, LogOut } from "lucide-react";
+import { GraduationCap, CheckCircle2, Lock, PlayCircle, LogOut, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/course")({
