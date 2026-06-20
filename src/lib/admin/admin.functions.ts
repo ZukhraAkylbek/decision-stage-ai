@@ -567,3 +567,95 @@ export const getAppeals = createServerFn({ method: "GET" })
     }));
     return withTitle;
   });
+
+// ---------- per-student analytics ----------
+export const getStudents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<StudentStat[]> => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+
+    const [{ data: profilesRaw }, { data: attemptsRaw }, { data: progressRaw }, { data: appealsRaw }] =
+      await Promise.all([
+        supabaseAdmin.from("profiles").select("id, display_name"),
+        supabaseAdmin
+          .from("task_attempts")
+          .select("user_id, status, attempt_no, override_status, created_at"),
+        supabaseAdmin
+          .from("lesson_progress")
+          .select("user_id, status, updated_at"),
+        supabaseAdmin.from("appeals").select("user_id"),
+      ]);
+
+    const profiles = (profilesRaw ?? []) as { id: string; display_name: string | null }[];
+    const attempts = (attemptsRaw ?? []) as {
+      user_id: string;
+      status: string;
+      attempt_no: number;
+      override_status: string | null;
+      created_at: string;
+    }[];
+    const progress = (progressRaw ?? []) as {
+      user_id: string;
+      status: string;
+      updated_at: string;
+    }[];
+    const appeals = (appealsRaw ?? []) as { user_id: string }[];
+
+    const ids = new Set<string>();
+    profiles.forEach((p) => ids.add(p.id));
+    attempts.forEach((a) => ids.add(a.user_id));
+    progress.forEach((p) => ids.add(p.user_id));
+
+    const nameOf = (id: string) =>
+      profiles.find((p) => p.id === id)?.display_name || `${id.slice(0, 8)}…`;
+    const now = Date.now();
+    const DAYMS = 24 * 60 * 60 * 1000;
+
+    const out: StudentStat[] = [...ids].map((id) => {
+      const uAtt = attempts.filter((a) => a.user_id === id);
+      const uProg = progress.filter((p) => p.user_id === id);
+      const eff = (a: (typeof attempts)[number]) => a.override_status ?? a.status;
+      let self = 0,
+        help = 0,
+        failed = 0;
+      uAtt.forEach((a) => {
+        const s = eff(a);
+        if (s === "solved_self") self++;
+        else if (s === "solved_with_help") help++;
+        else if (s === "failed") failed++;
+      });
+      const lessonsStarted = uProg.length;
+      const lessonsCompleted = uProg.filter((p) => p.status === "completed").length;
+      const completionPct = Math.round((lessonsCompleted / (LESSONS.length || 1)) * 100);
+      const lastActiveMs = Math.max(
+        0,
+        ...uAtt.map((a) => new Date(a.created_at).getTime()),
+        ...uProg.map((p) => new Date(p.updated_at).getTime()),
+      );
+      const lastActive = lastActiveMs ? new Date(lastActiveMs).toISOString() : null;
+      const stuck = uAtt.some((a) => a.attempt_no >= 3 && eff(a) !== "solved_self");
+      let status: StudentStat["status"] = "idle";
+      if (lessonsCompleted >= LESSONS.length) status = "done";
+      else if (lastActiveMs && now - lastActiveMs <= 7 * DAYMS) status = stuck ? "stuck" : "active";
+
+      return {
+        userId: id,
+        name: nameOf(id),
+        lessonsStarted,
+        lessonsCompleted,
+        completionPct,
+        attempts: uAtt.length,
+        avgAttempts: lessonsStarted ? Math.round((uAtt.length / lessonsStarted) * 10) / 10 : 0,
+        solvedSelf: self,
+        solvedWithHelp: help,
+        failed,
+        appeals: appeals.filter((a) => a.user_id === id).length,
+        lastActive,
+        status,
+      };
+    });
+
+    out.sort((a, b) => +new Date(b.lastActive ?? 0) - +new Date(a.lastActive ?? 0));
+    return out;
+  });
