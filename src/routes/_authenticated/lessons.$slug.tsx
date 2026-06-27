@@ -55,6 +55,7 @@ function LessonRunner() {
   const logAttempt = useServerFn(recordAttempt);
 
   const [step, setStep] = useState(0);
+  const [unlocked, setUnlocked] = useState(0);
   const [outcomes, setOutcomes] = useState<Record<number, AttemptStatus>>({});
   const [scores, setScores] = useState<Record<number, number>>({});
 
@@ -83,6 +84,19 @@ function LessonRunner() {
   const taskIndex = step - 1;
   const task = !isTheory && !isSummary ? lesson.tasks[taskIndex] : undefined;
 
+  function goTo(target: number) {
+    if (target < 0 || target > unlocked || target > totalSteps - 1) return;
+    setStep(target);
+  }
+
+  function advance() {
+    setStep((s) => {
+      const next = Math.min(s + 1, totalSteps - 1);
+      setUnlocked((u) => Math.max(u, next));
+      return next;
+    });
+  }
+
   function completeTask(status: AttemptStatus, score?: number) {
     const fallbackScore = status === "solved_self" ? 100 : status === "solved_with_help" ? 65 : 30;
     setOutcomes((o) => ({ ...o, [taskIndex]: status }));
@@ -97,7 +111,7 @@ function LessonRunner() {
         },
       }).catch(() => {});
     }
-    setStep((s) => s + 1);
+    advance();
   }
 
   const stepLabel = isTheory
@@ -105,6 +119,9 @@ function LessonRunner() {
     : isSummary
       ? STEP_LABELS_RU.summary
       : STEP_LABELS_RU[task!.type];
+
+  const progressPct = Math.round((step / (totalSteps - 1)) * 100);
+  const canGoNext = step < unlocked;
 
   return (
     <div className="min-h-screen bg-gradient-subtle">
@@ -119,36 +136,87 @@ function LessonRunner() {
             </div>
             <div className="font-semibold text-sm truncate">{lesson.title}</div>
           </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goTo(step - 1)}
+              disabled={step === 0}
+              className="h-8"
+            >
+              <ArrowLeft className="size-4" /> Назад
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => goTo(step + 1)}
+              disabled={!canGoNext}
+              className="h-8"
+            >
+              Вперёд <ArrowRight className="size-4" />
+            </Button>
+          </div>
         </div>
-        {/* 5-step progress within lesson (tasks only) */}
-        <div className="max-w-3xl mx-auto px-4 pb-3 flex items-center gap-1.5">
-          {lesson.tasks.map((t, i) => {
-            const oc = outcomes[i];
-            const active = taskIndex === i;
-            return (
-              <div key={i} className="flex-1">
-                <div
-                  className={cn(
-                    "h-1.5 rounded-full transition-colors",
-                    oc === "solved_self" && "bg-emerald-500",
-                    oc === "solved_with_help" && "bg-amber-400",
-                    oc === "failed" && "bg-destructive",
-                    !oc && active && "bg-primary",
-                    !oc && !active && "bg-secondary",
-                  )}
-                />
-                <div className="mt-1 text-[9px] text-center text-muted-foreground uppercase tracking-wide">
-                  {STEP_LABELS_RU[t.type]}
-                </div>
-              </div>
-            );
-          })}
+        {/* Animated overall progress bar + clickable step dots */}
+        <div className="max-w-3xl mx-auto px-4 pb-3">
+          <div className="flex items-center gap-3">
+            <div className="relative h-2 flex-1 rounded-full bg-secondary overflow-hidden">
+              <div
+                className="absolute inset-y-0 left-0 rounded-full bg-gradient-primary transition-[width] duration-500 ease-out"
+                style={{ width: `${progressPct}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-medium tabular-nums text-muted-foreground shrink-0">
+              {progressPct}%
+            </span>
+          </div>
+          <div className="mt-2 flex items-center gap-1.5">
+            {Array.from({ length: totalSteps }).map((_, i) => {
+              const ti = i - 1;
+              const oc = outcomes[ti];
+              const active = step === i;
+              const reachable = i <= unlocked;
+              const label =
+                i === 0 ? STEP_LABELS_RU.theory : i === totalSteps - 1 ? STEP_LABELS_RU.summary : STEP_LABELS_RU[lesson.tasks[ti].type];
+              return (
+                <button
+                  key={i}
+                  type="button"
+                  disabled={!reachable}
+                  onClick={() => goTo(i)}
+                  className="flex-1 group disabled:cursor-not-allowed"
+                  aria-label={`Шаг ${i + 1}: ${label}`}
+                >
+                  <div
+                    className={cn(
+                      "h-1.5 rounded-full transition-all",
+                      oc === "solved_self" && "bg-emerald-500",
+                      oc === "solved_with_help" && "bg-amber-400",
+                      oc === "failed" && "bg-destructive",
+                      !oc && active && "bg-primary",
+                      !oc && !active && reachable && "bg-primary/30",
+                      !oc && !active && !reachable && "bg-secondary",
+                      active && "ring-2 ring-primary/40",
+                    )}
+                  />
+                  <div
+                    className={cn(
+                      "mt-1 text-[9px] text-center uppercase tracking-wide truncate",
+                      active ? "text-foreground font-semibold" : "text-muted-foreground",
+                    )}
+                  >
+                    {label}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </header>
 
       <main className={cn("mx-auto px-4 py-6", task?.type === "call" ? "max-w-6xl" : "max-w-3xl")}>
         {isTheory && (
-          <TheoryStep lesson={lesson} onNext={() => setStep(1)} />
+          <TheoryStep lesson={lesson} onNext={advance} />
         )}
         {task && (
           <TaskStep
@@ -159,7 +227,7 @@ function LessonRunner() {
           />
         )}
         {isSummary && (
-          <SummaryStep lesson={lesson} outcomes={outcomes} scores={scores} onBackToTheory={() => setStep(0)} onFinish={() => navigate({ to: "/course" })} />
+          <SummaryStep lesson={lesson} outcomes={outcomes} scores={scores} onBackToTheory={() => goTo(0)} onFinish={() => navigate({ to: "/course" })} />
         )}
       </main>
     </div>
