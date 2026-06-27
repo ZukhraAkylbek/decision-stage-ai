@@ -14,6 +14,21 @@ export type Database = {
   }
   public: {
     Tables: {
+      app_config: {
+        Row: {
+          key: string
+          value: string
+        }
+        Insert: {
+          key: string
+          value: string
+        }
+        Update: {
+          key?: string
+          value?: string
+        }
+        Relationships: []
+      }
       appeals: {
         Row: {
           admin_resolution: string | null
@@ -122,6 +137,112 @@ export type Database = {
         }
         Relationships: []
       }
+      student_events: {
+        Row: {
+          created_at: string
+          id: string
+          item_id: string | null
+          kind: string | null
+          payload: Json | null
+          student_id: string | null
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string | null
+          payload?: Json | null
+          student_id?: string | null
+          type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_id?: string | null
+          kind?: string | null
+          payload?: Json | null
+          student_id?: string | null
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_events_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_progress: {
+        Row: {
+          current_step: number
+          id: string
+          item_id: string
+          kind: string
+          score: number | null
+          started_at: string
+          status: string
+          student_id: string
+          updated_at: string
+        }
+        Insert: {
+          current_step?: number
+          id?: string
+          item_id: string
+          kind: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id: string
+          updated_at?: string
+        }
+        Update: {
+          current_step?: number
+          id?: string
+          item_id?: string
+          kind?: string
+          score?: number | null
+          started_at?: string
+          status?: string
+          student_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_progress_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          telegram: string
+          telegram_norm: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          telegram: string
+          telegram_norm?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          telegram?: string
+          telegram_norm?: string | null
+        }
+        Relationships: []
+      }
       task_attempts: {
         Row: {
           ai_feedback: Json | null
@@ -199,12 +320,88 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_add_student: {
+        Args: { p_name: string; p_secret: string; p_telegram: string }
+        Returns: {
+          created_at: string
+          id: string
+          name: string
+          telegram: string
+          telegram_norm: string | null
+        }
+        SetofOptions: {
+          from: "*"
+          to: "students"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      admin_check: { Args: { p_secret: string }; Returns: undefined }
+      admin_list_students: {
+        Args: { p_secret: string }
+        Returns: {
+          avg_score: number
+          created_at: string
+          id: string
+          last_active: string
+          lessons_completed: number
+          name: string
+          practice_completed: number
+          telegram: string
+          total_items: number
+        }[]
+      }
+      admin_remove_student: {
+        Args: { p_id: string; p_secret: string }
+        Returns: undefined
+      }
+      admin_student_detail: {
+        Args: { p_id: string; p_secret: string }
+        Returns: {
+          current_step: number
+          item_id: string
+          kind: string
+          score: number
+          status: string
+          updated_at: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
+      }
+      norm_tg: { Args: { p: string }; Returns: string }
+      student_log_event: {
+        Args: {
+          p_item_id: string
+          p_kind: string
+          p_payload: Json
+          p_student_id: string
+          p_type: string
+        }
+        Returns: undefined
+      }
+      student_login: {
+        Args: { p_name: string; p_telegram: string }
+        Returns: {
+          id: string
+          name: string
+          telegram: string
+        }[]
+      }
+      student_save_progress: {
+        Args: {
+          p_item_id: string
+          p_kind: string
+          p_score: number
+          p_status: string
+          p_step: number
+          p_student_id: string
+        }
+        Returns: undefined
       }
     }
     Enums: {
