@@ -7,8 +7,19 @@ export * from "./types";
 
 const RAW_LESSONS: Lesson[] = [...LESSONS_1_9, ...LESSONS_10_18, ...LESSONS_19_26];
 
-// Every lesson includes its звонок-step (call). The data already provides one call task per lesson.
-export const LESSONS: Lesson[] = RAW_LESSONS;
+/** Lessons removed from the program. */
+const EXCLUDED_LESSON_NUMBERS = new Set([16, 21, 26]);
+
+/** Task types kept in lessons — only quizzes and case-choice rounds. */
+const KEPT_TASK_TYPES = new Set(["quiz", "case_choice"]);
+
+// Keep only allowed lessons, and inside each lesson keep only quiz/case tasks.
+export const LESSONS: Lesson[] = RAW_LESSONS.filter(
+  (l) => !EXCLUDED_LESSON_NUMBERS.has(l.number),
+).map((l) => ({
+  ...l,
+  tasks: l.tasks.filter((t) => KEPT_TASK_TYPES.has(t.type)),
+}));
 
 /** Human-readable URL slugs for each lesson, keyed by internal lesson id. */
 export const LESSON_SLUGS: Record<string, string> = {
