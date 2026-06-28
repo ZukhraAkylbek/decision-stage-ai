@@ -38,9 +38,9 @@ export const Route = createFileRoute("/tests/$slug")({
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        { property: "og:url", content: `/lessons/${params.slug}` },
+        { property: "og:url", content: `/tests/${params.slug}` },
       ],
-      links: [{ rel: "canonical", href: `/lessons/${params.slug}` }],
+      links: [{ rel: "canonical", href: `/tests/${params.slug}` }],
     };
   },
   component: LessonRunner,
