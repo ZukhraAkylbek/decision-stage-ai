@@ -101,6 +101,9 @@ function AdminPage() {
             <TabsTrigger value="students">
               <Users className="size-4" /> Студенты
             </TabsTrigger>
+            <TabsTrigger value="manage">
+              <UserCog className="size-4" /> Управление доступом
+            </TabsTrigger>
             <TabsTrigger value="calls">
               <PhoneCall className="size-4" /> AI-проверки и звонки
             </TabsTrigger>
