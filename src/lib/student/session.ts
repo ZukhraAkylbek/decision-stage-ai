@@ -72,7 +72,7 @@ export async function saveStudentProgress(p: {
     p_item_id: p.itemId,
     p_step: p.step,
     p_status: p.status,
-    p_score: p.score ?? null,
+    p_score: (p.score ?? null) as unknown as number,
   });
 }
 
