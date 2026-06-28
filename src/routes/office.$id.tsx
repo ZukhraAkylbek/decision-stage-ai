@@ -5,7 +5,7 @@ import { getMission } from "@/lib/missions";
 import { useMissionEngine } from "@/lib/missions/engine";
 import type { Choice, DeskObjectId, Step } from "@/lib/missions/types";
 import { TONE_LABELS } from "@/lib/missions/types";
-import { upsertProgress } from "@/lib/course/progress.functions";
+import { getStudent, saveStudentProgress, useStudent } from "@/lib/student/session";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
