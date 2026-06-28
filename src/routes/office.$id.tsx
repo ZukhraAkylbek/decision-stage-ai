@@ -1,11 +1,10 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
 import { getMission } from "@/lib/missions";
 import { useMissionEngine } from "@/lib/missions/engine";
 import type { Choice, DeskObjectId, Step } from "@/lib/missions/types";
 import { TONE_LABELS } from "@/lib/missions/types";
-import { upsertProgress } from "@/lib/course/progress.functions";
+import { getStudent, saveStudentProgress, useStudent } from "@/lib/student/session";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import {
@@ -41,7 +40,7 @@ import mugImg from "@/assets/office-mug.png";
 import plantImg from "@/assets/office-plant.png";
 import notebookImg from "@/assets/office-notebook.png";
 
-export const Route = createFileRoute("/_authenticated/practice/$id")({
+export const Route = createFileRoute("/office/$id")({
   component: MissionRunner,
 });
 
@@ -57,31 +56,35 @@ const CHANNEL_ICON = { chat: MessageSquare, email: Mail, call: PhoneCall } as co
 function MissionRunner() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const student = useStudent();
   const mission = getMission(id);
-  const saveProgress = useServerFn(upsertProgress);
+
+  useEffect(() => {
+    if (student === null) navigate({ to: "/login" });
+  }, [student, navigate]);
+
+  if (!student) return null;
 
   if (!mission) {
     return (
       <div className="min-h-screen grid place-items-center bg-[oklch(0.14_0.02_265)] text-white">
         <div className="text-center">
           <p>Миссия не найдена.</p>
-          <Link to="/course" className="text-primary hover:underline">К списку уроков</Link>
+          <Link to="/app" className="text-primary hover:underline">К списку</Link>
         </div>
       </div>
     );
   }
 
-  return <MissionStage key={mission.id} mission={mission} navigate={navigate} saveProgress={saveProgress} />;
+  return <MissionStage key={mission.id} mission={mission} navigate={navigate} />;
 }
 
 function MissionStage({
   mission,
   navigate,
-  saveProgress,
 }: {
   mission: NonNullable<ReturnType<typeof getMission>>;
   navigate: ReturnType<typeof useNavigate>;
-  saveProgress: ReturnType<typeof useServerFn>;
 }) {
   const engine = useMissionEngine(mission);
   const { state, currentStep, metricPct, start, reset, choose } = engine;
@@ -96,10 +99,19 @@ function MissionStage({
   }, []);
 
   useEffect(() => {
-    const status =
-      state.status === "won" ? "completed" : state.status === "intro" ? "in_progress" : state.status === "lost" ? "in_progress" : "in_progress";
-    void saveProgress({ data: { lessonId: mission.id, currentStep: state.stepIndex, status } }).catch(() => {});
-  }, [state.status, state.stepIndex, mission.id, saveProgress]);
+    const student = getStudent();
+    if (!student) return;
+    const status = state.status === "won" ? "completed" : "in_progress";
+    void saveStudentProgress({
+      studentId: student.id,
+      kind: "office",
+      itemId: mission.id,
+      step: state.stepIndex,
+      status,
+      score: state.status === "won" ? metricPct : null,
+    }).catch(() => {});
+  }, [state.status, state.stepIndex, mission.id, metricPct]);
+
 
   const activeObject = state.status === "playing" ? currentStep?.object : null;
   const playing = state.status === "playing";
@@ -129,7 +141,7 @@ function MissionStage({
       <div className="relative z-10 px-4 md:px-6 lg:px-8 py-3">
         <div className="flex flex-wrap items-center gap-3 justify-between rounded-xl bg-black/40 backdrop-blur-md px-4 py-2 border border-white/10 shadow-xl">
           <div className="flex items-center gap-3 min-w-0">
-            <Link to="/course" className="inline-flex items-center text-xs text-white/70 hover:text-white gap-1 shrink-0">
+            <Link to="/app" className="inline-flex items-center text-xs text-white/70 hover:text-white gap-1 shrink-0">
               <ArrowLeft className="size-3.5" />
             </Link>
             <div className="flex items-center gap-2 min-w-0">
@@ -156,7 +168,7 @@ function MissionStage({
           <Button
             variant="outline"
             size="sm"
-            onClick={() => navigate({ to: "/course" })}
+            onClick={() => navigate({ to: "/app" })}
             className="bg-white/10 border-white/20 text-white hover:bg-white/20 hover:text-white h-8"
           >
             Выйти из офиса
@@ -260,7 +272,7 @@ function MissionStage({
             )}
             {(state.status === "won" || state.status === "lost") && (
               <div className="absolute inset-0 grid place-items-center p-4 bg-black/55 backdrop-blur-[2px] overflow-y-auto">
-                <EndCard mission={mission} state={state} onRetry={reset} onFinish={() => navigate({ to: "/course" })} />
+                <EndCard mission={mission} state={state} onRetry={reset} onFinish={() => navigate({ to: "/app" })} />
               </div>
             )}
           </div>

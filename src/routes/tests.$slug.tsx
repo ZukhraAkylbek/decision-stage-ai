@@ -3,10 +3,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
 import { getLesson, STEP_LABELS_RU, type Task } from "@/lib/course";
 import { gradeWritten, type GradeResult } from "@/lib/course/grading.functions";
-import { upsertProgress, recordAttempt } from "@/lib/course/progress.functions";
+import { getStudent, saveStudentProgress, useStudent } from "@/lib/student/session";
 import { CallPanel } from "@/components/course/CallPanel";
 import { LessonRadar, type LessonSkillKey } from "@/components/course/LessonRadar";
 import { AppealButton } from "@/components/course/AppealButton";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -22,7 +23,7 @@ import {
   Sparkles,
 } from "lucide-react";
 
-export const Route = createFileRoute("/_authenticated/lessons/$slug")({
+export const Route = createFileRoute("/tests/$slug")({
   head: ({ params }) => {
     const lesson = getLesson(params.slug);
     const title = lesson
@@ -37,9 +38,9 @@ export const Route = createFileRoute("/_authenticated/lessons/$slug")({
         { name: "description", content: description },
         { property: "og:title", content: title },
         { property: "og:description", content: description },
-        { property: "og:url", content: `/lessons/${params.slug}` },
+        { property: "og:url", content: `/tests/${params.slug}` },
       ],
-      links: [{ rel: "canonical", href: `/lessons/${params.slug}` }],
+      links: [{ rel: "canonical", href: `/tests/${params.slug}` }],
     };
   },
   component: LessonRunner,
@@ -50,30 +51,45 @@ type AttemptStatus = "solved_self" | "solved_with_help" | "failed";
 function LessonRunner() {
   const { slug } = Route.useParams();
   const navigate = useNavigate();
+  const student = useStudent();
   const lesson = getLesson(slug);
-  const saveProgress = useServerFn(upsertProgress);
-  const logAttempt = useServerFn(recordAttempt);
 
   const [step, setStep] = useState(0);
   const [unlocked, setUnlocked] = useState(0);
   const [outcomes, setOutcomes] = useState<Record<number, AttemptStatus>>({});
   const [scores, setScores] = useState<Record<number, number>>({});
+  const [celebrate, setCelebrate] = useState(false);
 
   const totalSteps = lesson ? lesson.tasks.length + 2 : 0;
 
   useEffect(() => {
-    if (!lesson) return;
-    void saveProgress({
-      data: { lessonId: lesson.id, currentStep: step, status: step >= totalSteps - 1 ? "completed" : "in_progress" },
+    if (student === null) navigate({ to: "/login" });
+  }, [student, navigate]);
+
+  useEffect(() => {
+    const s = getStudent();
+    if (!lesson || !s) return;
+    const completed = step >= totalSteps - 1;
+    const scoreVals = Object.values(scores);
+    const avg = scoreVals.length ? Math.round(scoreVals.reduce((a, b) => a + b, 0) / scoreVals.length) : null;
+    void saveStudentProgress({
+      studentId: s.id,
+      kind: "test",
+      itemId: lesson.id,
+      step,
+      status: completed ? "completed" : "in_progress",
+      score: completed ? avg : null,
     }).catch(() => {});
-  }, [step, lesson, saveProgress, totalSteps]);
+  }, [step, lesson, totalSteps, scores]);
+
+  if (!student) return null;
 
   if (!lesson) {
     return (
       <div className="min-h-screen grid place-items-center">
         <div className="text-center">
-          <p>Урок не найден.</p>
-          <Link to="/course" className="text-primary hover:underline">К списку уроков</Link>
+          <p>Тест не найден.</p>
+          <Link to="/app" className="text-primary hover:underline">К списку тестов</Link>
         </div>
       </div>
     );
@@ -101,16 +117,7 @@ function LessonRunner() {
     const fallbackScore = status === "solved_self" ? 100 : status === "solved_with_help" ? 65 : 30;
     setOutcomes((o) => ({ ...o, [taskIndex]: status }));
     setScores((s) => ({ ...s, [taskIndex]: score ?? fallbackScore }));
-    if (task) {
-      void logAttempt({
-        data: {
-          lessonId: lesson!.id,
-          taskType: task.type,
-          attemptNo: 1,
-          status,
-        },
-      }).catch(() => {});
-    }
+    if (status !== "failed") setCelebrate(true);
     advance();
   }
 
@@ -127,7 +134,7 @@ function LessonRunner() {
     <div className="min-h-screen bg-gradient-subtle">
       <header className="border-b bg-card/80 backdrop-blur sticky top-0 z-10">
         <div className="max-w-3xl mx-auto px-4 py-3 flex items-center gap-3">
-          <Link to="/course" className="text-muted-foreground hover:text-foreground">
+          <Link to="/app" className="text-muted-foreground hover:text-foreground">
             <ArrowLeft className="size-5" />
           </Link>
           <div className="min-w-0 flex-1">
@@ -227,9 +234,22 @@ function LessonRunner() {
           />
         )}
         {isSummary && (
-          <SummaryStep lesson={lesson} outcomes={outcomes} scores={scores} onBackToTheory={() => goTo(0)} onFinish={() => navigate({ to: "/course" })} />
+          <SummaryStep lesson={lesson} outcomes={outcomes} scores={scores} onBackToTheory={() => goTo(0)} onFinish={() => navigate({ to: "/app" })} />
         )}
       </main>
+
+      <Dialog open={celebrate} onOpenChange={setCelebrate}>
+        <DialogContent className="max-w-xs text-center">
+          <div className="mx-auto size-16 rounded-full bg-emerald-500/15 grid place-items-center">
+            <CheckCircle2 className="size-9 text-emerald-500" />
+          </div>
+          <h3 className="text-lg font-bold">Верно! 🎉</h3>
+          <p className="text-sm text-muted-foreground">Отличная работа — задание зачтено. Двигаемся дальше.</p>
+          <Button className="w-full" onClick={() => setCelebrate(false)}>
+            Продолжить
+          </Button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -758,7 +778,7 @@ function SummaryStep({
       </div>
 
       <div className="mt-6 grid sm:grid-cols-2 gap-2">
-        <Button onClick={onFinish}>К списку уроков</Button>
+        <Button onClick={onFinish}>К списку тестов</Button>
         <Button variant="outline" onClick={onBackToTheory}>
           <BookOpen className="size-4" /> Повторить теорию
         </Button>

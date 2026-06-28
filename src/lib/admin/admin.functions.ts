@@ -659,3 +659,73 @@ export const getStudents = createServerFn({ method: "GET" })
     out.sort((a, b) => +new Date(b.lastActive ?? 0) - +new Date(a.lastActive ?? 0));
     return out;
   });
+
+// ---------- managed students (telegram-nick login) ----------
+export interface ManagedStudent {
+  id: string;
+  name: string;
+  telegram: string;
+  created_at: string;
+  lessonsCompleted: number;
+  officeCompleted: number;
+}
+
+export const listManagedStudents = createServerFn({ method: "GET" })
+  .middleware([requireSupabaseAuth])
+  .handler(async ({ context }): Promise<ManagedStudent[]> => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const [{ data: studentsRaw, error }, { data: progressRaw }] = await Promise.all([
+      supabaseAdmin.from("students").select("id, name, telegram, created_at").order("created_at", { ascending: false }),
+      supabaseAdmin.from("student_progress").select("student_id, kind, status"),
+    ]);
+    if (error) throw error;
+    const progress = (progressRaw ?? []) as { student_id: string; kind: string; status: string }[];
+    return ((studentsRaw ?? []) as any[]).map((s) => ({
+      id: s.id,
+      name: s.name,
+      telegram: s.telegram,
+      created_at: s.created_at,
+      lessonsCompleted: progress.filter((p) => p.student_id === s.id && p.kind === "test" && p.status === "completed").length,
+      officeCompleted: progress.filter((p) => p.student_id === s.id && p.kind === "office" && p.status === "completed").length,
+    }));
+  });
+
+const AddStudentInput = z.object({
+  name: z.string().trim().min(1).max(100),
+  telegram: z.string().trim().min(1).max(100),
+});
+
+export const addManagedStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => AddStudentInput.parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const tg = data.telegram.replace(/^@/, "").trim();
+    const norm = tg.toLowerCase();
+    const { data: existing } = await supabaseAdmin
+      .from("students")
+      .select("id")
+      .eq("telegram_norm", norm)
+      .maybeSingle();
+    if (existing) {
+      const { error } = await supabaseAdmin.from("students").update({ name: data.name }).eq("id", existing.id);
+      if (error) throw error;
+      return { ok: true, updated: true };
+    }
+    const { error } = await supabaseAdmin.from("students").insert({ name: data.name, telegram: tg });
+    if (error) throw error;
+    return { ok: true, updated: false };
+  });
+
+export const removeManagedStudent = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((d: unknown) => z.object({ id: z.string().uuid() }).parse(d))
+  .handler(async ({ data, context }) => {
+    await assertAdmin(context.userId);
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
+    const { error } = await supabaseAdmin.from("students").delete().eq("id", data.id);
+    if (error) throw error;
+    return { ok: true };
+  });

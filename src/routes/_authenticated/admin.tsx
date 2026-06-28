@@ -8,7 +8,8 @@ import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminLessons } from "@/components/admin/AdminLessons";
 import { AdminCallLogs } from "@/components/admin/AdminCallLogs";
 import { AdminStudents } from "@/components/admin/AdminStudents";
-import { LayoutDashboard, BookOpen, PhoneCall, ShieldCheck, ArrowLeft, Users } from "lucide-react";
+import { AdminManageStudents } from "@/components/admin/AdminManageStudents";
+import { LayoutDashboard, BookOpen, PhoneCall, ShieldCheck, ArrowLeft, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/admin")({
@@ -58,8 +59,8 @@ function AdminPage() {
               У вас нет прав администратора. Обратитесь к владельцу курса.
             </p>
           )}
-          <Link to="/course" className="block text-sm text-primary hover:underline">
-            ← Вернуться к курсу
+          <Link to="/app" className="block text-sm text-primary hover:underline">
+            ← На главную
           </Link>
         </div>
       </div>
@@ -82,8 +83,8 @@ function AdminPage() {
             </div>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/course">
-              <ArrowLeft className="size-4" /> К курсу
+            <Link to="/app">
+              <ArrowLeft className="size-4" /> Назад
             </Link>
           </Button>
         </div>
@@ -101,6 +102,9 @@ function AdminPage() {
             <TabsTrigger value="students">
               <Users className="size-4" /> Студенты
             </TabsTrigger>
+            <TabsTrigger value="manage">
+              <UserCog className="size-4" /> Управление доступом
+            </TabsTrigger>
             <TabsTrigger value="calls">
               <PhoneCall className="size-4" /> AI-проверки и звонки
             </TabsTrigger>
@@ -113,6 +117,9 @@ function AdminPage() {
           </TabsContent>
           <TabsContent value="students">
             <AdminStudents />
+          </TabsContent>
+          <TabsContent value="manage">
+            <AdminManageStudents />
           </TabsContent>
           <TabsContent value="calls">
             <AdminCallLogs />

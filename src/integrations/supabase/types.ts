@@ -392,17 +392,40 @@ export type Database = {
           telegram: string
         }[]
       }
-      student_save_progress: {
-        Args: {
-          p_item_id: string
-          p_kind: string
-          p_score: number
-          p_status: string
-          p_step: number
-          p_student_id: string
-        }
-        Returns: undefined
+      student_progress_list: {
+        Args: { p_student_id: string }
+        Returns: {
+          current_step: number
+          item_id: string
+          kind: string
+          score: number
+          status: string
+          updated_at: string
+        }[]
       }
+      student_save_progress:
+        | {
+            Args: {
+              p_item_id: string
+              p_kind: string
+              p_score: number
+              p_status: string
+              p_step: number
+              p_student_id: string
+            }
+            Returns: undefined
+          }
+        | {
+            Args: {
+              p_item_id: string
+              p_kind: string
+              p_score: number
+              p_status: string
+              p_step: number
+              p_student_id: string
+            }
+            Returns: undefined
+          }
     }
     Enums: {
       app_role: "admin" | "user"
