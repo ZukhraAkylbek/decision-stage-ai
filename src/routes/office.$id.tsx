@@ -57,31 +57,35 @@ const CHANNEL_ICON = { chat: MessageSquare, email: Mail, call: PhoneCall } as co
 function MissionRunner() {
   const { id } = Route.useParams();
   const navigate = useNavigate();
+  const student = useStudent();
   const mission = getMission(id);
-  const saveProgress = useServerFn(upsertProgress);
+
+  useEffect(() => {
+    if (student === null) navigate({ to: "/login" });
+  }, [student, navigate]);
+
+  if (!student) return null;
 
   if (!mission) {
     return (
       <div className="min-h-screen grid place-items-center bg-[oklch(0.14_0.02_265)] text-white">
         <div className="text-center">
           <p>Миссия не найдена.</p>
-          <Link to="/course" className="text-primary hover:underline">К списку уроков</Link>
+          <Link to="/app" className="text-primary hover:underline">К списку</Link>
         </div>
       </div>
     );
   }
 
-  return <MissionStage key={mission.id} mission={mission} navigate={navigate} saveProgress={saveProgress} />;
+  return <MissionStage key={mission.id} mission={mission} navigate={navigate} />;
 }
 
 function MissionStage({
   mission,
   navigate,
-  saveProgress,
 }: {
   mission: NonNullable<ReturnType<typeof getMission>>;
   navigate: ReturnType<typeof useNavigate>;
-  saveProgress: ReturnType<typeof useServerFn>;
 }) {
   const engine = useMissionEngine(mission);
   const { state, currentStep, metricPct, start, reset, choose } = engine;
@@ -96,10 +100,19 @@ function MissionStage({
   }, []);
 
   useEffect(() => {
-    const status =
-      state.status === "won" ? "completed" : state.status === "intro" ? "in_progress" : state.status === "lost" ? "in_progress" : "in_progress";
-    void saveProgress({ data: { lessonId: mission.id, currentStep: state.stepIndex, status } }).catch(() => {});
-  }, [state.status, state.stepIndex, mission.id, saveProgress]);
+    const student = getStudent();
+    if (!student) return;
+    const status = state.status === "won" ? "completed" : "in_progress";
+    void saveStudentProgress({
+      studentId: student.id,
+      kind: "office",
+      itemId: mission.id,
+      step: state.stepIndex,
+      status,
+      score: state.status === "won" ? metricPct : null,
+    }).catch(() => {});
+  }, [state.status, state.stepIndex, mission.id, metricPct]);
+
 
   const activeObject = state.status === "playing" ? currentStep?.object : null;
   const playing = state.status === "playing";
