@@ -28,7 +28,7 @@ function AuthPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => {
-      if (data.user) navigate({ to: "/course" });
+      if (data.user) navigate({ to: "/admin" });
     });
   }, [navigate]);
 
@@ -42,7 +42,7 @@ function AuthPage() {
           email,
           password,
           options: {
-            emailRedirectTo: window.location.origin + "/course",
+            emailRedirectTo: window.location.origin + "/admin",
             data: { display_name: name },
           },
         });
@@ -52,7 +52,7 @@ function AuthPage() {
         const { error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
         if (error) throw error;
       }
-      navigate({ to: "/course" });
+      navigate({ to: "/admin" });
     } catch (err) {
       setError(err instanceof Error ? err.message : "Ошибка входа");
     } finally {
@@ -63,14 +63,14 @@ function AuthPage() {
   async function handleGoogle() {
     setError(null);
     const result = await lovable.auth.signInWithOAuth("google", {
-      redirect_uri: window.location.origin + "/course",
+      redirect_uri: window.location.origin + "/admin",
     });
     if (result.error) {
       setError("Не удалось войти через Google");
       return;
     }
     if (result.redirected) return;
-    navigate({ to: "/course" });
+    navigate({ to: "/admin" });
   }
 
   return (

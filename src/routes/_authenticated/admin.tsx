@@ -58,7 +58,7 @@ function AdminPage() {
               У вас нет прав администратора. Обратитесь к владельцу курса.
             </p>
           )}
-          <Link to="/course" className="block text-sm text-primary hover:underline">
+          <Link to="/app" className="block text-sm text-primary hover:underline">
             ← Вернуться к курсу
           </Link>
         </div>
@@ -82,7 +82,7 @@ function AdminPage() {
             </div>
           </div>
           <Button asChild variant="ghost" size="sm">
-            <Link to="/course">
+            <Link to="/app">
               <ArrowLeft className="size-4" /> К курсу
             </Link>
           </Button>
