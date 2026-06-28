@@ -117,6 +117,9 @@ function AdminPage() {
           <TabsContent value="students">
             <AdminStudents />
           </TabsContent>
+          <TabsContent value="manage">
+            <AdminManageStudents />
+          </TabsContent>
           <TabsContent value="calls">
             <AdminCallLogs />
           </TabsContent>
