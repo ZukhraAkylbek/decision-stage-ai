@@ -8,6 +8,7 @@ import { AdminOverview } from "@/components/admin/AdminOverview";
 import { AdminLessons } from "@/components/admin/AdminLessons";
 import { AdminCallLogs } from "@/components/admin/AdminCallLogs";
 import { AdminStudents } from "@/components/admin/AdminStudents";
+import { AdminManageStudents } from "@/components/admin/AdminManageStudents";
 import { LayoutDashboard, BookOpen, PhoneCall, ShieldCheck, ArrowLeft, Users, UserCog } from "lucide-react";
 import { toast } from "sonner";
 
