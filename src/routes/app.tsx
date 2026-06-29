@@ -254,11 +254,28 @@ function KanbanCard({ row }: { row: ProgressRow }) {
 function KanbanSidebar({ progress, loading }: { progress: ProgressRow[]; loading: boolean }) {
   const inProgress = progress.filter((p) => p.status !== "completed");
   const done = progress.filter((p) => p.status === "completed");
+  const totalItems = LESSONS.length + MISSIONS.length;
+  const doneCount = done.length;
+  const pct = totalItems ? Math.round((doneCount / totalItems) * 100) : 0;
 
   return (
     <div className="rounded-2xl border bg-card/60 p-4">
       <div className="font-bold text-sm">Мой прогресс</div>
       <p className="text-[11px] text-muted-foreground">Что в работе и что уже закрыто.</p>
+
+      <div className="mt-3">
+        <div className="flex items-center justify-between text-xs font-medium">
+          <span className="text-muted-foreground">Пройдено</span>
+          <span className="tabular-nums">{doneCount} из {totalItems} · {pct}%</span>
+        </div>
+        <div className="mt-1.5 h-2.5 w-full rounded-full bg-secondary overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-primary transition-[width] duration-700 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+      </div>
+
 
       {loading ? (
         <div className="mt-4 grid place-items-center py-6 text-muted-foreground">
