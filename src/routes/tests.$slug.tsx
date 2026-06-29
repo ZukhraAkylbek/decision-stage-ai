@@ -313,38 +313,52 @@ function HintBox({ level, text }: { level: number; text: string }) {
 }
 
 /* ---------------- Quiz ---------------- */
-function QuizStep({ lessonId, task, onComplete }: { lessonId: string; task: Extract<Task, { type: "quiz" }>; onComplete: (s: AttemptStatus) => void }) {
-  const [qi, setQi] = useState(0);
-  const [selected, setSelected] = useState<number | null>(null);
-  const [attempts, setAttempts] = useState(0);
-  const [usedHelp, setUsedHelp] = useState(false);
-  const [reveal, setReveal] = useState(false);
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
+function QuizStep({ lessonId, task, onComplete }: { lessonId: string; task: Extract<Task, { type: "quiz" }>; onComplete: (s: AttemptStatus) => void }) {
+  // Queue of question indices still to be answered correctly.
+  const [queue, setQueue] = useState<number[]>(() => task.questions.map((_, i) => i));
+  const [selected, setSelected] = useState<number | null>(null);
+  const [missed, setMissed] = useState<Set<number>>(new Set());
+  const [phase, setPhase] = useState<"answering" | "wrong">("answering");
+
+  const total = task.questions.length;
+  const qi = queue[0];
   const q = task.questions[qi];
-  const correct = selected === q.correctIndex;
+  const remaining = new Set(queue).size;
+  const answered = total - remaining;
 
   function check() {
     if (selected === null) return;
     if (selected === q.correctIndex) {
-      next(attempts > 0);
+      const rest = queue.slice(1);
+      if (rest.length === 0) {
+        onComplete(missed.size > 0 ? "solved_with_help" : "solved_self");
+        return;
+      }
+      setQueue(rest);
+      setSelected(null);
+      setPhase("answering");
     } else {
-      const n = attempts + 1;
-      setAttempts(n);
-      setUsedHelp(true);
-      if (n >= 2) setReveal(true);
+      setMissed((m) => new Set(m).add(qi));
+      setPhase("wrong");
     }
   }
 
-  function next(withHelp: boolean) {
-    if (qi + 1 < task.questions.length) {
-      setQi(qi + 1);
-      setSelected(null);
-      setAttempts(0);
-      setReveal(false);
-      if (withHelp) setUsedHelp(true);
-    } else {
-      onComplete(usedHelp || withHelp ? "solved_with_help" : "solved_self");
-    }
+  function nextAfterWrong() {
+    // Send the missed question to the back and reshuffle the rest so the order changes.
+    const [head, ...rest] = queue;
+    const reshuffled = shuffle(rest);
+    setQueue([...reshuffled, head]);
+    setSelected(null);
+    setPhase("answering");
   }
 
   return (
@@ -353,70 +367,85 @@ function QuizStep({ lessonId, task, onComplete }: { lessonId: string; task: Extr
         <div className="flex items-center justify-between gap-3">
           <span className="text-xs font-semibold uppercase tracking-wider text-primary">Ситуационный раунд</span>
           <span className="rounded-full bg-card px-3 py-1 text-xs text-muted-foreground shadow-card">
-            {qi + 1}/{task.questions.length}
+            Закрыто {answered} из {total}
           </span>
         </div>
+        <div className="mt-2 h-1.5 w-full rounded-full bg-secondary overflow-hidden">
+          <div
+            className="h-full rounded-full bg-gradient-primary transition-[width] duration-500"
+            style={{ width: `${Math.round((answered / total) * 100)}%` }}
+          />
+        </div>
         <h3 className="mt-3 text-lg font-semibold">{q.question}</h3>
+        {remaining < queue.length && (
+          <p className="mt-1 text-xs text-muted-foreground">Этот вопрос вернулся к тебе — попробуй снова.</p>
+        )}
       </div>
       <div className="p-5 space-y-2">
         {q.options.map((opt, i) => {
           const isSel = selected === i;
-          const showCorrect = (reveal || (selected !== null && correct)) && i === q.correctIndex;
-          const showWrong = isSel && selected !== q.correctIndex && attempts > 0;
+          const showWrong = phase === "wrong" && isSel;
           return (
             <button
               key={i}
               type="button"
-              disabled={reveal}
+              disabled={phase === "wrong"}
               onClick={() => setSelected(i)}
               className={cn(
                 "group flex w-full items-center gap-3 rounded-lg border px-4 py-3 text-left text-sm transition-colors",
                 isSel && !showWrong && "border-primary bg-primary/5",
-                showCorrect && "border-emerald-500 bg-emerald-500/10",
                 showWrong && "border-destructive bg-destructive/10",
-                !isSel && !showCorrect && "hover:bg-secondary",
+                !isSel && "hover:bg-secondary",
               )}
             >
               <span className="grid size-7 shrink-0 place-items-center rounded-md bg-secondary text-xs font-semibold group-hover:bg-card">
                 {String.fromCharCode(65 + i)}
               </span>
               <span className="flex-1">{opt}</span>
-              {showCorrect && <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}
               {showWrong && <XCircle className="size-4 shrink-0 text-destructive" />}
             </button>
           );
         })}
 
-      {attempts === 1 && !reveal && <HintBox level={1} text={task.hint1} />}
-      {attempts >= 2 && !reveal && <HintBox level={2} text={task.hint2} />}
-      {reveal && (
-        <div className="mt-3 rounded-lg bg-secondary/60 p-3 text-sm">
-          Правильный ответ выделен зелёным. Запомни и двигайся дальше.
-        </div>
-      )}
-      {attempts >= 1 && (
-        <AppealButton
-          context={{
-            lessonId,
-            taskType: "quiz",
-            attemptNumber: attempts,
-            studentInput: selected !== null ? `Вопрос: ${q.question} · Выбран вариант ${selected !== null ? String.fromCharCode(65 + selected) : "-"}: ${selected !== null ? q.options[selected] : ""}` : "",
-            systemFeedback: reveal ? task.hint2 : task.hint1,
-          }}
-        />
-      )}
-
-      <div className="mt-5">
-        {reveal ? (
-          <Button className="w-full" onClick={() => next(true)}>Дальше</Button>
-        ) : (
-          <Button className="w-full" onClick={check} disabled={selected === null}>Проверить</Button>
+        {phase === "wrong" && (
+          <>
+            <div className="mt-3 rounded-lg border border-destructive/40 bg-destructive/10 p-3 text-sm">
+              <div className="font-medium text-destructive inline-flex items-center gap-1.5">
+                <XCircle className="size-4" /> Неверно
+              </div>
+              <p className="mt-1 text-foreground/80">
+                Этот вопрос мы зададим ещё раз чуть позже — в другом порядке вариантов. Сначала пройди остальные.
+              </p>
+            </div>
+            <HintBox level={1} text={task.hint1} />
+            <AppealButton
+              context={{
+                lessonId,
+                taskType: "quiz",
+                attemptNumber: 1,
+                studentInput: `Вопрос: ${q.question} · Выбран вариант ${selected !== null ? String.fromCharCode(65 + selected) : "-"}: ${selected !== null ? q.options[selected] : ""}`,
+                systemFeedback: task.hint1,
+              }}
+            />
+          </>
         )}
-      </div>
+
+        <div className="mt-5">
+          {phase === "wrong" ? (
+            <Button className="w-full" onClick={nextAfterWrong}>
+              Следующий вопрос <ArrowRight className="size-4" />
+            </Button>
+          ) : (
+            <Button className="w-full" onClick={check} disabled={selected === null}>
+              Проверить
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );
 }
+
 
 /* ---------------- Calculation ---------------- */
 function CalcStep({ lessonId, task, onComplete }: { lessonId: string; task: Extract<Task, { type: "calculation" }>; onComplete: (s: AttemptStatus) => void }) {
