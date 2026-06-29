@@ -149,11 +149,36 @@ function statusOf(progress: ProgressRow[], kind: string, itemId: string) {
 }
 
 function TestsGrid({ progress, onBack }: { progress: ProgressRow[]; onBack: () => void }) {
+  const doneCount = LESSONS.filter((l) => statusOf(progress, "test", l.id).done).length;
   return (
     <div>
       <BackBar title="Тесты" onBack={onBack} />
+
+      <div className="mb-4 rounded-2xl border bg-card p-4">
+        <p className="text-sm">
+          Каждый тест — это короткий урок по проектному менеджменту в IT: сначала теория, затем квиз с разбором.
+        </p>
+        <ul className="mt-2 space-y-1 text-xs text-muted-foreground">
+          <li>• Ответил верно — двигаешься дальше и получаешь «Верно! 🎉».</li>
+          <li>• Ошибся — вопрос вернётся позже в другом порядке, пока не ответишь правильно.</li>
+          <li>• Прогресс сохраняется автоматически, можно продолжить с любого места.</li>
+        </ul>
+        <div className="mt-3 flex items-center gap-3">
+          <div className="h-2 flex-1 rounded-full bg-secondary overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-primary transition-[width] duration-700"
+              style={{ width: `${Math.round((doneCount / LESSONS.length) * 100)}%` }}
+            />
+          </div>
+          <span className="text-xs font-medium tabular-nums text-muted-foreground shrink-0">
+            {doneCount}/{LESSONS.length} пройдено
+          </span>
+        </div>
+      </div>
+
       <div className="grid gap-3 sm:grid-cols-2">
         {LESSONS.map((lesson) => {
+
           const { done, started } = statusOf(progress, "test", lesson.id);
           return (
             <div key={lesson.id} className="rounded-xl border bg-card p-4 flex items-start gap-3 hover:shadow-card transition-shadow">
