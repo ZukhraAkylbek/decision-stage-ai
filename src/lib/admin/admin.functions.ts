@@ -74,15 +74,15 @@ export interface AdminAnalytics {
 export interface StudentStat {
   userId: string;
   name: string;
-  lessonsStarted: number;
+  telegram: string;
+  testsCompleted: number;
+  testsTotal: number;
+  testsStarted: number;
+  officeCompleted: number;
+  officeTotal: number;
   lessonsCompleted: number;
   completionPct: number;
-  attempts: number;
-  avgAttempts: number;
-  solvedSelf: number;
-  solvedWithHelp: number;
-  failed: number;
-  appeals: number;
+  avgScore: number | null;
   lastActive: string | null;
   status: "active" | "stuck" | "idle" | "done";
 }
