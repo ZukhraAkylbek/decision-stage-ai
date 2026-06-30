@@ -23,7 +23,7 @@ const STATUS: Record<StudentStat["status"], { cls: string; label: string }> = {
   done: { cls: "bg-primary/15 text-primary border-primary/30", label: "Завершил" },
 };
 
-type SortKey = "name" | "completionPct" | "avgAttempts" | "appeals" | "lastActive";
+type SortKey = "name" | "completionPct" | "avgScore" | "officeCompleted" | "lastActive";
 
 export function AdminStudents() {
   const fetchStudents = useServerFn(getStudents);
@@ -38,11 +38,11 @@ export function AdminStudents() {
   const rows = useMemo(() => {
     let r = data ?? [];
     if (filter !== "all") r = r.filter((s) => s.status === filter);
-    if (q) r = r.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()));
+    if (q) r = r.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()) || s.telegram.toLowerCase().includes(q.toLowerCase()));
     return [...r].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "lastActive") return +new Date(b.lastActive ?? 0) - +new Date(a.lastActive ?? 0);
-      return (b[sort] as number) - (a[sort] as number);
+      return ((b[sort] as number) ?? 0) - ((a[sort] as number) ?? 0);
     });
   }, [data, filter, q, sort]);
 
@@ -97,10 +97,10 @@ export function AdminStudents() {
           <TableHeader>
             <TableRow>
               <Th label="Студент" onClick={() => setSort("name")} active={sort === "name"} />
-              <TableHead className="min-w-[160px]">Прогресс курса</TableHead>
-              <Th label="Ср. попыток" right onClick={() => setSort("avgAttempts")} active={sort === "avgAttempts"} />
-              <TableHead className="text-right">Сам / помощь / провал</TableHead>
-              <Th label="Жалобы" right onClick={() => setSort("appeals")} active={sort === "appeals"} />
+              <TableHead className="min-w-[160px]">Прогресс</TableHead>
+              <Th label="Тесты" right onClick={() => setSort("completionPct")} active={sort === "completionPct"} />
+              <Th label="Офис" right onClick={() => setSort("officeCompleted")} active={sort === "officeCompleted"} />
+              <Th label="Ср. балл" right onClick={() => setSort("avgScore")} active={sort === "avgScore"} />
               <Th label="Активность" right onClick={() => setSort("lastActive")} active={sort === "lastActive"} />
               <TableHead className="text-right">Статус</TableHead>
             </TableRow>
@@ -115,23 +115,32 @@ export function AdminStudents() {
             ) : (
               rows.map((s) => (
                 <TableRow key={s.userId}>
-                  <TableCell className="font-medium">{s.name}</TableCell>
+                  <TableCell className="font-medium">
+                    <div>{s.name}</div>
+                    <div className="text-xs text-muted-foreground">@{s.telegram.replace(/^@/, "")}</div>
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Progress value={s.completionPct} className="h-2 flex-1" />
                       <span className="text-xs tabular-nums text-muted-foreground w-16 text-right">
-                        {s.lessonsCompleted}/26 · {s.completionPct}%
+                        {s.lessonsCompleted}/{s.testsTotal + s.officeTotal} · {s.completionPct}%
                       </span>
                     </div>
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{s.avgAttempts || "—"}</TableCell>
                   <TableCell className="text-right tabular-nums text-xs">
-                    <span className="text-emerald-500">{s.solvedSelf}</span> /{" "}
-                    <span className="text-amber-500">{s.solvedWithHelp}</span> /{" "}
-                    <span className="text-destructive">{s.failed}</span>
+                    {s.testsCompleted}/{s.testsTotal}
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums text-xs">
+                    {s.officeCompleted}/{s.officeTotal}
                   </TableCell>
                   <TableCell className="text-right tabular-nums">
-                    {s.appeals ? <span className="text-amber-500 font-medium">{s.appeals}</span> : "—"}
+                    {s.avgScore != null ? (
+                      <span className={s.avgScore >= 70 ? "text-emerald-500 font-medium" : "text-amber-500 font-medium"}>
+                        {s.avgScore}
+                      </span>
+                    ) : (
+                      "—"
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-xs text-muted-foreground tabular-nums">
                     {s.lastActive ? new Date(s.lastActive).toLocaleDateString("ru-RU") : "—"}

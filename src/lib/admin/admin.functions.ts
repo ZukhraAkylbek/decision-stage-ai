@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { LESSONS } from "@/lib/course";
+import { MISSIONS } from "@/lib/missions";
 
 // ---------- shared types ----------
 export interface KpiOverview {
@@ -73,15 +74,15 @@ export interface AdminAnalytics {
 export interface StudentStat {
   userId: string;
   name: string;
-  lessonsStarted: number;
+  telegram: string;
+  testsCompleted: number;
+  testsTotal: number;
+  testsStarted: number;
+  officeCompleted: number;
+  officeTotal: number;
   lessonsCompleted: number;
   completionPct: number;
-  attempts: number;
-  avgAttempts: number;
-  solvedSelf: number;
-  solvedWithHelp: number;
-  failed: number;
-  appeals: number;
+  avgScore: number | null;
   lastActive: string | null;
   status: "active" | "stuck" | "idle" | "done";
 }
@@ -568,89 +569,74 @@ export const getAppeals = createServerFn({ method: "GET" })
     return withTitle;
   });
 
-// ---------- per-student analytics ----------
+// ---------- per-student analytics (telegram-nick students) ----------
 export const getStudents = createServerFn({ method: "GET" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }): Promise<StudentStat[]> => {
     await assertAdmin(context.userId);
     const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
 
-    const [{ data: profilesRaw }, { data: attemptsRaw }, { data: progressRaw }, { data: appealsRaw }] =
-      await Promise.all([
-        supabaseAdmin.from("profiles").select("id, display_name"),
-        supabaseAdmin
-          .from("task_attempts")
-          .select("user_id, status, attempt_no, override_status, created_at"),
-        supabaseAdmin
-          .from("lesson_progress")
-          .select("user_id, status, updated_at"),
-        supabaseAdmin.from("appeals").select("user_id"),
-      ]);
+    const [{ data: studentsRaw, error }, { data: progressRaw }] = await Promise.all([
+      supabaseAdmin.from("students").select("id, name, telegram, created_at"),
+      supabaseAdmin
+        .from("student_progress")
+        .select("student_id, kind, status, score, updated_at"),
+    ]);
+    if (error) throw error;
 
-    const profiles = (profilesRaw ?? []) as { id: string; display_name: string | null }[];
-    const attempts = (attemptsRaw ?? []) as {
-      user_id: string;
-      status: string;
-      attempt_no: number;
-      override_status: string | null;
+    const students = (studentsRaw ?? []) as {
+      id: string;
+      name: string;
+      telegram: string;
       created_at: string;
     }[];
     const progress = (progressRaw ?? []) as {
-      user_id: string;
+      student_id: string;
+      kind: string;
       status: string;
+      score: number | null;
       updated_at: string;
     }[];
-    const appeals = (appealsRaw ?? []) as { user_id: string }[];
 
-    const ids = new Set<string>();
-    profiles.forEach((p) => ids.add(p.id));
-    attempts.forEach((a) => ids.add(a.user_id));
-    progress.forEach((p) => ids.add(p.user_id));
-
-    const nameOf = (id: string) =>
-      profiles.find((p) => p.id === id)?.display_name || `${id.slice(0, 8)}…`;
+    const testsTotal = LESSONS.length;
+    const officeTotal = MISSIONS.length;
+    const total = testsTotal + officeTotal;
     const now = Date.now();
     const DAYMS = 24 * 60 * 60 * 1000;
 
-    const out: StudentStat[] = [...ids].map((id) => {
-      const uAtt = attempts.filter((a) => a.user_id === id);
-      const uProg = progress.filter((p) => p.user_id === id);
-      const eff = (a: (typeof attempts)[number]) => a.override_status ?? a.status;
-      let self = 0,
-        help = 0,
-        failed = 0;
-      uAtt.forEach((a) => {
-        const s = eff(a);
-        if (s === "solved_self") self++;
-        else if (s === "solved_with_help") help++;
-        else if (s === "failed") failed++;
-      });
-      const lessonsStarted = uProg.length;
-      const lessonsCompleted = uProg.filter((p) => p.status === "completed").length;
-      const completionPct = Math.round((lessonsCompleted / (LESSONS.length || 1)) * 100);
-      const lastActiveMs = Math.max(
-        0,
-        ...uAtt.map((a) => new Date(a.created_at).getTime()),
-        ...uProg.map((p) => new Date(p.updated_at).getTime()),
-      );
+    const out: StudentStat[] = students.map((st) => {
+      const rows = progress.filter((p) => p.student_id === st.id);
+      const tests = rows.filter((p) => p.kind === "test");
+      const office = rows.filter((p) => p.kind === "office");
+      const testsCompleted = tests.filter((p) => p.status === "completed").length;
+      const officeCompleted = office.filter((p) => p.status === "completed").length;
+      const lessonsCompleted = testsCompleted + officeCompleted;
+      const completionPct = total ? Math.round((lessonsCompleted / total) * 100) : 0;
+
+      const scores = rows.map((p) => p.score).filter((s): s is number => s != null);
+      const avgScore = scores.length
+        ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
+        : null;
+
+      const lastActiveMs = Math.max(0, ...rows.map((p) => new Date(p.updated_at).getTime()));
       const lastActive = lastActiveMs ? new Date(lastActiveMs).toISOString() : null;
-      const stuck = uAtt.some((a) => a.attempt_no >= 3 && eff(a) !== "solved_self");
+
       let status: StudentStat["status"] = "idle";
-      if (lessonsCompleted >= LESSONS.length) status = "done";
-      else if (lastActiveMs && now - lastActiveMs <= 7 * DAYMS) status = stuck ? "stuck" : "active";
+      if (lessonsCompleted >= total && total > 0) status = "done";
+      else if (lastActiveMs && now - lastActiveMs <= 7 * DAYMS) status = "active";
 
       return {
-        userId: id,
-        name: nameOf(id),
-        lessonsStarted,
+        userId: st.id,
+        name: st.name,
+        telegram: st.telegram,
+        testsCompleted,
+        testsTotal,
+        testsStarted: tests.length,
+        officeCompleted,
+        officeTotal,
         lessonsCompleted,
         completionPct,
-        attempts: uAtt.length,
-        avgAttempts: lessonsStarted ? Math.round((uAtt.length / lessonsStarted) * 10) / 10 : 0,
-        solvedSelf: self,
-        solvedWithHelp: help,
-        failed,
-        appeals: appeals.filter((a) => a.user_id === id).length,
+        avgScore,
         lastActive,
         status,
       };
