@@ -23,7 +23,7 @@ const STATUS: Record<StudentStat["status"], { cls: string; label: string }> = {
   done: { cls: "bg-primary/15 text-primary border-primary/30", label: "Завершил" },
 };
 
-type SortKey = "name" | "completionPct" | "avgAttempts" | "appeals" | "lastActive";
+type SortKey = "name" | "completionPct" | "avgScore" | "officeCompleted" | "lastActive";
 
 export function AdminStudents() {
   const fetchStudents = useServerFn(getStudents);
@@ -38,11 +38,11 @@ export function AdminStudents() {
   const rows = useMemo(() => {
     let r = data ?? [];
     if (filter !== "all") r = r.filter((s) => s.status === filter);
-    if (q) r = r.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()));
+    if (q) r = r.filter((s) => s.name.toLowerCase().includes(q.toLowerCase()) || s.telegram.toLowerCase().includes(q.toLowerCase()));
     return [...r].sort((a, b) => {
       if (sort === "name") return a.name.localeCompare(b.name);
       if (sort === "lastActive") return +new Date(b.lastActive ?? 0) - +new Date(a.lastActive ?? 0);
-      return (b[sort] as number) - (a[sort] as number);
+      return ((b[sort] as number) ?? 0) - ((a[sort] as number) ?? 0);
     });
   }, [data, filter, q, sort]);
 
